@@ -1,28 +1,28 @@
-cod_uf;state;state_name;pib_2017;pib_2018;pib_mean;position
-11;RO;Rondônia;43506;44914;44210;land
-12;AC;Acre;14271;15331;14801;land
-13;AM;Amazonas;93204;100109;96656.5;land
-14;RR;Roraima;12103;13370;12736.5;land
-15;PA;Pará;155195;161350;158272.5;sea
-16;AP;Amapá;15480;16795;16137.5;sea
-17;TO;Tocantins;34102;35666;34884;land
-21;MA;Maranhão;89524;98179;93851.5;sea
-22;PI;Piauí;45359;50378;47868.5;sea
-23;CE;Ceará;147890;155904;151897;sea
-24;RN;Rio Grande do Norte;64295;66970;65632.5;sea
-25;PB;Paraíba;62387;64374;63380.5;sea
-26;PE;Pernambuco;181551;186352;183951.5;sea
-27;AL;Alagoas;52843;54413;53628;sea
-28;SE;Sergipe;40704;42018;41361;sea
-29;BA;Bahia;268661;286239;277450;sea
-31;MG;Minas Gerais;576199;614876;595537.5;land
-32;ES;Espírito Santo;113352;137020;125186;sea
-33;RJ;Rio de Janeiro;671362;758859;715110.5;sea
-35;SP;São Paulo;2119854;2210562;2165208;sea
-41;PR;Paraná;421374;298227;359800.5;sea
-42;SC;Santa Catarina;277192;298227;287709.5;sea
-43;RS;Rio Grande do Sul;423151;457294;440222.5;sea
-50;MS;Mato Grosso do Sul;96372;106969;101670.5;land
-51;MT;Mato Grosso;126805;137443;132124;land
-52;GO;Goiás;191899;195682;193790.5;land
-53;DF;Distrito Federal;244683;254817;249750;land
+cod_uf;state;state_name;pib_2017;pib_2018;pib_mean;position;region
+11;RO;Rondônia;43506;44914;44210;land;North
+12;AC;Acre;14271;15331;14801;land;North
+13;AM;Amazonas;93204;100109;96656.5;land;North
+14;RR;Roraima;12103;13370;12736.5;land;North
+15;PA;Pará;155195;161350;158272.5;sea;North
+16;AP;Amapá;15480;16795;16137.5;sea;North
+17;TO;Tocantins;34102;35666;34884;land;Central
+21;MA;Maranhão;89524;98179;93851.5;sea;Northeast
+22;PI;Piauí;45359;50378;47868.5;sea;Northeast
+23;CE;Ceará;147890;155904;151897;sea;Northeast
+24;RN;Rio Grande do Norte;64295;66970;65632.5;sea;Northeast
+25;PB;Paraíba;62387;64374;63380.5;sea;Northeast
+26;PE;Pernambuco;181551;186352;183951.5;sea;Northeast
+27;AL;Alagoas;52843;54413;53628;sea;Northeast
+28;SE;Sergipe;40704;42018;41361;sea;Northeast
+29;BA;Bahia;268661;286239;277450;sea;Northeast
+31;MG;Minas Gerais;576199;614876;595537.5;land;Southeast
+32;ES;Espírito Santo;113352;137020;125186;sea;Southeast
+33;RJ;Rio de Janeiro;671362;758859;715110.5;sea;Southeast
+35;SP;São Paulo;2119854;2210562;2165208;sea;Southeast
+41;PR;Paraná;421374;298227;359800.5;sea;South
+42;SC;Santa Catarina;277192;298227;287709.5;sea;South
+43;RS;Rio Grande do Sul;423151;457294;440222.5;sea;South
+50;MS;Mato Grosso do Sul;96372;106969;101670.5;land;Central
+51;MT;Mato Grosso;126805;137443;132124;land;Central
+52;GO;Goiás;191899;195682;193790.5;land;Central
+53;DF;Distrito Federal;244683;254817;249750;land;Central
