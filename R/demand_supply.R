@@ -34,12 +34,12 @@ colnames(binded_data) <- gsub ("AGPOLI", "Omega_3", colnames(binded_data))
 colnames(binded_data) <- gsub ("QTD_kg", "Catch_QTD_kg", colnames(binded_data))
 
 df_nut_data <- binded_data %>%
-  mutate (supply_higher_demand_catch = Catch_QTD_kg>CatchAmount_kg_1,
-          supply_higher_demand_zinc = Zinc_mu_kg_1> ZINCO_kg,
+  mutate (supply_higher_demand_catch = CatchAmount_kg_1> Catch_QTD_kg,
+          supply_higher_demand_zinc = Zinc_mu_kg_1> Zinc_kg,
           supply_higher_demand_iron = Iron_mu_kg_1 > Iron_kg,
-          supply_higher_demand_calcium = Calcium_mu_kg_1 > CALCIO_kg,
-          supply_higher_demand_vitaA = Vitamin_A_mu_kg_1 > VITA_RAE_kg,
-          supply_higher_demand_omega3 = Omega_3_mu_kg_1 > Omega_3_kg) %>%
+          supply_higher_demand_calcium = Calcium_mu_kg_1 > Calcium_kg,
+          supply_higher_demand_vitaA = Vitamin_A_mu_kg_1 > `Vitamin-A_kg`,
+          supply_higher_demand_omega3 = Omega_3_mu_kg_1 > `Polyunsatured fat_kg`) %>%
   mutate_if(is.logical, as.character) %>%
   mutate(supply_higher_demand_catch = recode(supply_higher_demand_catch, "TRUE" = "S>D",
                                        "FALSE" = "S<D"),
@@ -83,7 +83,8 @@ plot_all <-df_nut_data %>%
   my_theme+
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
-  scale_colour_viridis_d(begin=0.8,end=0.8)
+  #scale_colour_viridis_d(begin=0.8,end=0.8)
+  scale_fill_distiller(palette = "Spectral",direction=1)
 
 
 
@@ -103,7 +104,9 @@ plot_zinc<-df_nut_data %>%
   my_theme+
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
-  scale_colour_viridis_d(begin=0.2,end=0.8)
+  #scale_colour_viridis_d(begin=0.2,end=0.8)
+  scale_fill_distiller(palette = "Spectral",
+                       direction =1)
 
 
 # plot calcium
@@ -123,7 +126,8 @@ plot_calcium<-df_nut_data %>%
   my_theme+
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
-  scale_colour_viridis_d(begin=0.2,end=0.8)
+  #scale_colour_viridis_d(begin=0.2,end=0.8)
+  scale_fill_distiller(palette = "Spectral")
 
 
 
@@ -143,7 +147,8 @@ plot_iron<-df_nut_data %>%
   my_theme+
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
-  scale_colour_viridis_d(begin=0.2,end=0.8)
+  #scale_colour_viridis_d(begin=0.2,end=0.8)
+  scale_fill_distiller(palette = "Spectral")
 
 
 
@@ -151,7 +156,7 @@ plot_iron<-df_nut_data %>%
 # plot omega
 
 plot_omega3<-df_nut_data %>% 
-  select("state_adj",contains("omega"))  %>%
+  select("state_adj",contains(c("omega", "poly")))  %>%
   melt (id.vars = c("state_adj", "supply_higher_demand_omega3")) %>%
   ggplot (aes (x= variable, 
                y=(value),
@@ -164,7 +169,8 @@ plot_omega3<-df_nut_data %>%
   my_theme+
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
-  scale_colour_viridis_d(begin=0.2,end=0.8)
+  #scale_colour_viridis_d(begin=0.2,end=0.8)
+  scale_fill_distiller(palette = "Spectral")
 
 
 
@@ -192,7 +198,8 @@ plot_vitA<-df_nut_data %>%
         )+
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
-  scale_colour_viridis_d(begin=0.2,end=0.8)
+  #scale_colour_viridis_d(begin=0.2,end=0.8)
+  scale_fill_distiller(palette = "Spectral")
 
 
 # arrange
