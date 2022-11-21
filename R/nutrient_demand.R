@@ -6,14 +6,36 @@ require(ggplot2)
 require(reshape)
 require(reshape2)
 require(tidyr)
+library(sf)
+library(tidyverse)
+library(ggrepel)
+library(scatterpie)
+library (gridExtra)
+
+# FUnction
+# point within polygon
+st_centroid_within_poly <- function (poly) {
+  
+  # check if centroid is in polygon
+  centroid <- poly %>% st_centroid() 
+  in_poly <- st_within(centroid, poly, sparse = F)[[1]] 
+  
+  # if it is, return that centroid
+  if (in_poly) return(centroid) 
+  
+  # if not, calculate a point on the surface and return that
+  centroid_in_poly <- st_point_on_surface(poly) 
+  return(centroid_in_poly)
+}
+
+
+# ----------------
+
 
 
 # load data for analysis
 load (here ("output",
             "fishConsumption_Income.RData"))
-
-# change food type levels
-
 
 
 # 1 - proportion
@@ -30,8 +52,8 @@ foodType_ind <- dcast (data = CONSUMO_ALIMENTAR %>%
 
 
 # proportion (NAs are produced because each individual only belongs to one social class)
-sel_cols <- colnames(foodType_ind)[seq (which(colnames(foodType_ind) == "beef") , 
-                            which(colnames(foodType_ind) == "wildmeat"),
+sel_cols <- colnames(foodType_ind)[seq (which(colnames(foodType_ind) == "Beef") , 
+                            which(colnames(foodType_ind) == "Wildmeat"),
                             1)]
 
 
@@ -40,32 +62,37 @@ foodType_ind[,sel_cols]<-foodType_ind[,sel_cols]/foodType_ind[,"(all)"]
 # 0/0 = NaN
 foodType_ind[is.na(foodType_ind)] <- 0
 
+
+pdf (here ("output", "barplot_consumption"),width=5,height=7)
+
 # aggregate
 foodType_ind %>%
   select (-`(all)`) %>%
-  filter (is.na(beef) !=T) %>%
+  filter (is.na(Beef) !=T) %>%
   group_by(income_cat,region) %>%
-  summarise(across (beef:wildmeat,~ mean(.x, na.rm = TRUE))) %>% 
+  summarise(across (Beef:Wildmeat,~ mean(.x, na.rm = TRUE))) %>% 
   gather ("food_type", "proportion", -income_cat,-region) %>%
   ggplot (aes (fill=food_type, 
                x=(income_cat),
                y=proportion))+
     geom_bar (position="fill", stat="identity") +
   #scale_fill_viridis_d()+
-  scale_fill_brewer(palette = "Spectral")+
+  scale_fill_brewer(palette = "Spectral",direction=1)+
   facet_wrap(~region,nrow=5,ncol=1)+
   theme(axis.text.x = element_text(angle=90),
         panel.background = element_rect(fill = "white",
                                         colour = "gray",
                                         size = 0.5, 
-                                        linetype = "solid")) +
+                                        linetype = "solid"),
+        plot.caption =  element_text(size=8))+
   xlab ("Income class")+
   ylab ("Average proportion in the daily diet")+
-  labs (caption = "Source of data: Brazilian Institute of Geography and Statistics")
+  labs (caption = "Source of data: Brazilian Institute of Geography and Statistics (POF, 2018)") +
+  guides(fill=guide_legend(title="Protein type"))
 
 
 
-
+dev.off()
 
 
 # ----------------------------------------------------
@@ -73,42 +100,64 @@ foodType_ind %>%
 
 
 
-# 2 - daily comsumption
+# 2 - daily consumption
 # filter the food
 filter_interesting_food <- CONSUMO_ALIMENTAR %>% 
-  filter (sea_food == 1  ) 
+  filter (sea_food == 1  )  # seafood
 
-# function transform in kg year
+
+
+# function to transform quantitites into  kg / year
 fun_kg_year <- function (x) {(x/1000)*365}
+
 
 # filter the days
 consumption_nutrients <- filter_interesting_food %>%
-  arrange(state)%>% # order
+  arrange(state)%>% # ordering states
   filter (position == "sea") %>% # coastal states
   group_by(state,income_cat,unit_analysis) %>% # group by interviewer
-  select (state,income_cat,unit_analysis,DIA_SEMANA,N_pop_class, QTD, CALCIO, FERRO, ZINCO, VITA_RAE, AGPOLI) %>% # select  variables to test
-  #mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interview days
-  group_by(state,income_cat,unit_analysis) %>%  # solve duplicate data (measuremnet by people)
-  summarise(across (QTD:AGPOLI, ~sum(.x, na.rm=T)), # sum of personal consumption
-            mean_N_pop = mean(N_pop_class)) %>% #, # N per pop class
+  select (state,income_cat,unit_analysis,DIA_SEMANA,N_pop_class, 
+          QTD, 
+          Calcium, 
+          Iron, 
+          Zinc, 
+          `Vitamin-A`, 
+          `Polyunsatured fat`) %>% # select  variables (nutrients) to test
+  #mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
+  group_by(state,income_cat,unit_analysis) %>%  # summarize by person
+  summarise(across (QTD:`Polyunsatured fat`, ~sum(.x, na.rm=T)), # sum of personal consumption
+            mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
+            Ninterv = n_distinct(unit_analysis)) %>% #, # N interviewers
             #Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
   #group_by(state,income_cat,unit_analysis) %>%
   #summarise( sum_nut = mean( sum_nut,na.rm=T)) %>% #, # the average across the N days
              #Ndays=sum(Ndays,na.rm=T)) %>%
-  mutate (across (QTD:AGPOLI,list(kg = fun_kg_year)), # yearly consumption of nutrient, KG
-          mean_N_pop = mean(mean_N_pop)) %>% 
+  mutate (across (QTD:`Polyunsatured fat`,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
+          mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
+          Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
   group_by(state,income_cat) %>% # further group by state and class (summarize individual consumption)
   summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)) , # mean or sum?
-            mean_N_pop = mean(mean_N_pop)) %>%
+            mean_N_pop = mean(mean_N_pop,na.rm=T),
+            Ninterv = mean (Ninterv,na.rm=T)
+            ) %>%
+  complete(income_cat) %>% # keep all levels
+  mutate_at(c("Calcium_kg",
+              "Iron_kg",
+              "Zinc_kg",
+              "Vitamin-A_kg",
+              "Polyunsatured fat_kg"), ~replace_na(.,0)) %>%
   mutate(state_adj = recode(state, "Mato Grosso do Sul" = "Mato Grosso Do Sul",
                             "Rio de Janeiro" = "Rio De Janeiro",
                             "Rio Grande do Norte" = "Rio Grande Do Norte",
-                            "Espírito Santo" ="Espirito Santo")) %>%
+                            "Espírito Santo" ="Espirito Santo"),
+         sum_consumpt = Calcium_kg +Iron_kg+Zinc_kg+ `Vitamin-A_kg`+ `Polyunsatured fat_kg`
+         ) #%>%
   #mutate (kg_consumed = mean_year_cons_kg*mean_N_pop) %>%
-  mutate_each(funs(.*mean_N_pop), ends_with("kg"))  # extrapolate to all people
+  #mutate_each (funs(.*mean_N_pop), ends_with("kg"))  %>% # extrapolate to all people
+  #mutate_each (funs(./Ninterv), ends_with("kg"))  # per capita consumption
   
-
-
+  
+  
 
 # save
 save (consumption_nutrients, file = here ("output", "consumption_nutrients.RData"))
@@ -118,6 +167,7 @@ save (consumption_nutrients, file = here ("output", "consumption_nutrients.RData
 require("geobr")
 # https://ipeagit.github.io/geobr/
 # help here : https://cran.r-project.org/web/packages/geobr/vignettes/intro_to_geobr.html
+
 
 # load states
 BR_states <- read_state()
@@ -129,17 +179,19 @@ states_consumption <- dplyr::left_join(BR_states,
                                        by = c("name_state" = "state_adj"))
 
 
+
+
 # map
 # Remove plot axis
 no_axis <- theme(axis.title=element_blank(),
                  axis.text=element_blank(),
                  axis.ticks=element_blank(),
                  strip.text.x = element_text(size = 8),
-                 legend.position = "right", #c(0.85,0.2),
-                 legend.direction = "vertical",
+                 legend.position = "top", #c(0.85,0.2),
+                 legend.direction = "horizontal",
                  legend.title = element_text(size=8),
                  legend.text = element_text(size=6,angle=0),
-                 legend.key.size = unit(0.25, "cm"),
+                 legend.key.size = unit(0.5, "cm"),
                  plot.subtitle = element_text(size=9,angle=0),
                  panel.background = element_rect(fill = "white",
                                                  colour = "gray",
@@ -150,210 +202,315 @@ no_axis <- theme(axis.title=element_blank(),
                                                  colour = "gray80"))
 
 
-# map
+# total consumption
 
-zinc <- states_consumption  %>% 
-  filter (is.na(state )!=T) %>% 
-  ggplot() +
-  geom_sf(aes(fill=ZINCO_kg),
-          colour="black",#NA 
-          size=.15) +
-  labs(subtitle="Zinc consumption, Brazilian States, 2017-2018", 
-       size=8) +
-  scale_fill_distiller(palette = "RdGy", 
-                       name="(mg/kg/year)", 
-                       direction=-1,
-                       limits = c(min(states_consumption$ZINCO_kg),
-                                  max(states_consumption$ZINCO_kg))) +
+total_consumption_data <- states_consumption %>% 
+  # bind cols with state centroids
+  mutate(lon = map_dbl(geom, ~st_centroid_within_poly(.x)[[1]]),
+         lat = map_dbl(geom, ~st_centroid_within_poly(.x)[[2]])) %>%
+  # geom in the last col
+  relocate (geom, .after = lat)  %>% 
+  # proportion
+  mutate (QTD = QTD_kg) %>%
+  mutate_each (funs(./sum_consumpt), ends_with("kg")) %>%
+  filter (is.na(state )!=T) #%>%  # not coastal state
+  #filter (income_cat == "Class E") # class E for a while
   
-  no_axis+
-  facet_wrap(~income_cat,scales="fixed",ncol=5)
 
-
-# Calcium
-
-calcium <- states_consumption  %>% 
-  filter (is.na(state )!=T) %>% 
-  ggplot() +
-  geom_sf(aes(fill=CALCIO_kg),
+# plot
+p1 <- ggplot(data = total_consumption_data) +
+  geom_sf(aes(fill=QTD),
           colour="black",#NA 
           size=.15) +
-  labs(subtitle="Calcium consumption, Brazilian States, 2017-2018", 
+  labs(subtitle="Total food consumption, Brazilian States, 2017-2018", 
        size=8) +
-  scale_fill_distiller(palette = "RdGy", 
-                       name="(mg/kg/year)", 
+  scale_fill_distiller(palette = "Spectral", 
+                       name="(kg/year)", 
+                       na.value = "gray80",
                        direction=-1,
-                       limits = c(min(states_consumption$CALCIO_kg),
-                                  max(states_consumption$CALCIO_kg))) +
+                       limits = c(min(states_consumption$QTD),
+                                  max(states_consumption$QTD))) +
+  no_axis+
+  facet_wrap(~income_cat,scales="fixed",ncol=5) + 
+  theme(legend.position = "top",
+        legend.direction = "horizontal")  
   
-  no_axis+
-  facet_wrap(~income_cat,scales="fixed",ncol=5)
+
+# data to the pie chart
+data_pie <- data.frame (
+    total_consumption_data %>%
+      st_drop_geometry()%>% 
+      select (income_cat,
+              name_state,
+              sum_consumpt,
+              Calcium_kg,
+              Iron_kg,
+              Zinc_kg,
+              `Vitamin-A_kg`,
+              `Polyunsatured fat_kg`,
+              lat,
+              lon))%>%
+  complete(income_cat) %>%
+  mutate_at(c("Calcium_kg",
+              "Iron_kg",
+              "Zinc_kg",
+              "Vitamin.A_kg",
+              "Polyunsatured.fat_kg"), ~replace_na(.,0))
+
+# plot
 
 
-# iron
-
-iron <- states_consumption  %>% 
-  filter (is.na(state )!=T) %>% 
-  ggplot() +
-  geom_sf(aes(fill=FERRO_kg),
-          colour="black",#NA 
-          size=.15) +
-  labs(subtitle="Iron consumption, Brazilian States, 2017-2018", 
-       size=8) +
-  scale_fill_distiller(palette = "RdGy", 
-                       name="(mg/kg/year)", 
-                       direction=-1,
-                       limits = c(min(states_consumption$FERRO_kg),
-                                  max(states_consumption$FERRO_kg))) +
+p2<-ggplot() + geom_scatterpie(aes(x=lon, y=lat, 
+                                   group=name_state,
+                                   r = 1), 
+                               data=data_pie,
+                           cols=c("Calcium_kg",
+                                  "Iron_kg",
+                                  "Zinc_kg",
+                                  "Vitamin.A_kg",
+                                  "Polyunsatured.fat_kg"),
+                           color=NA) + 
+  coord_equal()+
+  scale_fill_viridis_d(option="viridis") +
+  facet_wrap(~income_cat,ncol=5) +
   
-  no_axis+
-  facet_wrap(~income_cat,scales="fixed",ncol=5)
+
+#geom_label_repel(data = data_pie,
+                  # aes(x=lon,y=lat,label=name_state),
+                   #size=2)+
+  no_axis + 
+  theme(panel.background =element_blank(),
+        panel.grid.major =element_blank(),
+        panel.grid.minor =element_blank())
+ 
 
 
-# vita
+pdf (here ("output", "Map_nutrients.pdf"),width=10,height=9)
 
-vitA <- states_consumption  %>% 
-  filter (is.na(state )!=T) %>% 
-  ggplot() +
-  geom_sf(aes(fill=VITA_RAE_kg ),
-          colour="black",#NA 
-          size=.15) +
-  labs(subtitle="Vitamin-A consumption, Brazilian States, 2017-2018", 
-       size=8) +
-  scale_fill_distiller(palette = "RdGy", 
-                       name=expression(paste("(", mu, "g/kg/year)",sep="")), 
-                       direction=-1,
-                       limits = c(min(states_consumption$VITA_RAE_kg ),
-                                  max(states_consumption$VITA_RAE_kg ))) +
-  
-  no_axis+
-  facet_wrap(~income_cat,scales="fixed",ncol=5)
-
-# ag poli
-
-agpoli <- states_consumption  %>% 
-  filter (is.na(state )!=T) %>% 
-  ggplot() +
-  geom_sf(aes(fill=AGPOLI_kg),
-          colour="black",#NA 
-          size=.15) +
-  labs(subtitle="Polyunsaturated fatty acids consumption, Brazilian States, 2017-2018", 
-       size=8) +
-  scale_fill_distiller(palette = "RdGy", 
-                       name="(g/kg/year)", 
-                       direction=-1,
-                       limits = c(min(states_consumption$AGPOLI_kg),
-                                  max(states_consumption$AGPOLI_kg))) +
-  no_axis+
-  facet_wrap(~income_cat,scales="fixed",ncol=5)
+# arrange maps
+grid.arrange(p1+theme(plot.subtitle =  element_blank()),p2,
+             ncol=1,nrow=2)
 
 
-
-# arrange
-ncols <- 8
-grid.arrange(zinc,
-             calcium,
-             iron,
-             vitA,
-             agpoli,
-             ncol=ncols,
-             nrow=5,
-             layout_matrix = rbind (rep(1,ncols),
-                                    rep(2,ncols),
-                                    rep(3,ncols),
-                                    rep(4,ncols),
-                                    rep(5,ncols)))
-
-
+dev.off()
 
 
 # plots showing consumption per class
-
 # aggregate data by personID
 # obtain a boxplot per type of protein, and region
-CONSUMO_ALIMENTAR %>% 
-  filter (general_type %in% c("DD", "beef&other", "wildmeat") !=T) %>%
-  group_by (income_cat,general_type,position,region,unit_analysis) %>% 
-  summarize (Zinc = (sum(ZINCO)),
-             Quantidade = sum(QTD)) %>%
-  #filter (region %in% c("North")) %>%
-  ggplot (aes(x=general_type, 
-              y=log(Zinc)))+
-  scale_fill_viridis_d(option = "viridis", begin =0.2,end=1)+
-  geom_boxplot(aes(fill=income_cat))+
-  facet_wrap(~region, nrow=2,ncol=3)+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle=45),
-        legend.position = c(0.85,0.15))
-  
+#CONSUMO_ALIMENTAR %>% 
+#  filter (general_type %in% c("DD", "beef&other", "wildmeat","goat") !=T) %>%
+#  filter(region != "Central") %>%
+#  filter (position == "sea") %>%
+#  group_by (income_cat,general_type,position,region,unit_analysis) %>%  
+#  summarize (QTD_mu = mean(QTD,na.rm=T)
+#             #,
+#             #Calcium_mu = mean(CALCIO,na.rm=T),
+#             #Iron_mu = mean(FERRO,na.rm=T),
+#             #Zinc_mu = mean (ZINCO,na.rm=T),
+#             #Vitamin_A_mu = mean(VITA_RAE,na.rm=T)
+#             ) %>%
+#  #melt(id.vars = c("income_cat", "general_type","position","region")) %>% # ,"unit_analysis"
+#  ggplot (aes(x=general_type, 
+#              y=log(QTD_mu),
+#              fill=general_type))+
+#  geom_boxplot()+
+#  scale_fill_viridis_d(option = "viridis", begin =0.2,end=1)+
+#  facet_wrap(~region+income_cat, nrow=5,ncol=5)+
+#  theme_bw()+
+#  theme(axis.text.x = element_text(angle=45,size=8),
+#        legend.position = "none", #c(0.85,0.15))
+#        legend.direction = "vertical")
+#  
+#
+## trends per class
+#
+#CONSUMO_ALIMENTAR %>% 
+#  filter (general_type %in% c("DD") !=T) %>%
+#  group_by (general_type,position,region,unit_analysis,income_cat) %>% 
+#  summarize (Zinc = (sum(ZINCO)),
+#             Quantidade = sum(QTD),
+#             PC_RENDA_MONET=mean(PC_RENDA_MONET)) %>%
+#  
+#  ggplot (aes(x=log10(PC_RENDA_MONET), 
+#              y=log10(Zinc),
+#              #group = income_cat,
+#              fill = income_cat,
+#              colour=income_cat))+
+#  scale_fill_viridis_d(option = "viridis", begin =0.2,end=1)+
+#  geom_point (aes(fill=income_cat,
+#                  colour=income_cat),
+#              alpha = 0.025)+
+#  geom_smooth(method= "lm")+
+#  facet_wrap(~general_type, ncol=5)+
+#  theme_bw()+
+#  theme(axis.text.x = element_text(angle=0),
+#        legend.position = c(0.92,0.15))
+#
+#
+## trends of protein consumption with income, per region
+#CONSUMO_ALIMENTAR %>% 
+#  filter (general_type %in% c("DD") !=T) %>%
+#  group_by (general_type,position,region,unit_analysis) %>% 
+#  
+#  summarize (Zinc = (sum(ZINCO)),
+#             Quantidade = sum(QTD),
+#             PC_RENDA_MONET=mean(PC_RENDA_MONET))%>%
+#  
+#  ggplot (aes(x=log10(PC_RENDA_MONET), 
+#              y=log10(Zinc),
+#              group=region,
+#              colour=region,
+#              fill=region))+
+#  geom_point(aes(colour=region,fill=region),alpha=0.01)+
+#  scale_fill_viridis_d(option = "viridis", begin =0.2,end=1)+
+#  geom_smooth(method= "lm")+
+#  facet_wrap(~general_type, ncol=5)+
+#  theme_classic()+
+#  theme(axis.text.x = element_text(angle=0))
+#
+#
+#
+#
+## trend
+#
+#CONSUMO_ALIMENTAR %>% 
+#  filter (general_type %in% c("seafood")) %>%
+#  group_by (food_type,general_type,position,region,unit_analysis) %>% 
+#  summarize (Zinc = (sum(ZINCO)),
+#             Quantidade = sum(QTD),
+#             PC_RENDA_MONET=mean(PC_RENDA_MONET))%>%
+#  
+#  ggplot (aes(x=log10(PC_RENDA_MONET), 
+#              y=log10(Zinc),
+#              group=region,
+#              colour=region,
+#              fill=region))+
+#  geom_point(aes(colour=region,fill=region),alpha=0.05)+
+#  scale_fill_viridis_d(option = "viridis", begin =0.2,end=1)+
+#  geom_smooth(method= "glm")+
+#  theme_classic()+
+#  theme(axis.text.x = element_text(angle=0))
+#
+#
+#
+#
+## plots per state and nutrient
+#
+#
+## map
+#
+#zinc <- states_consumption  %>% 
+#  filter (is.na(state )!=T) %>% 
+#  ggplot() +
+#  geom_sf(aes(fill=ZINCO_kg),
+#          colour="black",#NA 
+#          size=.15) +
+#  labs(subtitle="Zinc consumption, Brazilian States, 2017-2018", 
+#       size=8) +
+#  scale_fill_distiller(palette = "RdGy", 
+#                       name="(mg/kg/year)", 
+#                       direction=-1,
+#                       limits = c(min(states_consumption$ZINCO_kg),
+#                                  max(states_consumption$ZINCO_kg))) +
+#  
+#  no_axis+
+#  facet_wrap(~income_cat,scales="fixed",ncol=5)
+#
+#
+## Calcium
+#
+#calcium <- states_consumption  %>% 
+#  filter (is.na(state )!=T) %>% 
+#  ggplot() +
+#  geom_sf(aes(fill=CALCIO_kg),
+#          colour="black",#NA 
+#          size=.15) +
+#  labs(subtitle="Calcium consumption, Brazilian States, 2017-2018", 
+#       size=8) +
+#  scale_fill_distiller(palette = "RdGy", 
+#                       name="(mg/kg/year)", 
+#                       direction=-1,
+#                       limits = c(min(states_consumption$CALCIO_kg),
+#                                  max(states_consumption$CALCIO_kg))) +
+#  
+#  no_axis+
+#  facet_wrap(~income_cat,scales="fixed",ncol=5)
+#
+#
+## iron
+#
+#iron <- states_consumption  %>% 
+#  filter (is.na(state )!=T) %>% 
+#  ggplot() +
+#  geom_sf(aes(fill=FERRO_kg),
+#          colour="black",#NA 
+#          size=.15) +
+#  labs(subtitle="Iron consumption, Brazilian States, 2017-2018", 
+#       size=8) +
+#  scale_fill_distiller(palette = "RdGy", 
+#                       name="(mg/kg/year)", 
+#                       direction=-1,
+#                       limits = c(min(states_consumption$FERRO_kg),
+#                                  max(states_consumption$FERRO_kg))) +
+#  
+#  no_axis+
+#  facet_wrap(~income_cat,scales="fixed",ncol=5)
+#
+#
+## vita
+#
+#vitA <- states_consumption  %>% 
+#  filter (is.na(state )!=T) %>% 
+#  ggplot() +
+#  geom_sf(aes(fill=VITA_RAE_kg ),
+#          colour="black",#NA 
+#          size=.15) +
+#  labs(subtitle="Vitamin-A consumption, Brazilian States, 2017-2018", 
+#       size=8) +
+#  scale_fill_distiller(palette = "RdGy", 
+#                       name=expression(paste("(", mu, "g/kg/year)",sep="")), 
+#                       direction=-1,
+#                       limits = c(min(states_consumption$VITA_RAE_kg ),
+#                                  max(states_consumption$VITA_RAE_kg ))) +
+#  
+#  no_axis+
+#  facet_wrap(~income_cat,scales="fixed",ncol=5)
+#
+## ag poli
+#
+#agpoli <- states_consumption  %>% 
+#  filter (is.na(state )!=T) %>% 
+#  ggplot() +
+#  geom_sf(aes(fill=AGPOLI_kg),
+#          colour="black",#NA 
+#          size=.15) +
+#  labs(subtitle="Polyunsaturated fatty acids consumption, Brazilian States, 2017-2018", 
+#       size=8) +
+#  scale_fill_distiller(palette = "RdGy", 
+#                       name="(g/kg/year)", 
+#                       direction=-1,
+#                       limits = c(min(states_consumption$AGPOLI_kg),
+#                                  max(states_consumption$AGPOLI_kg))) +
+#  no_axis+
+#  facet_wrap(~income_cat,scales="fixed",ncol=5)
+#
+#
+#
+## arrange
+#ncols <- 8
+#grid.arrange(zinc,
+#             calcium,
+#             iron,
+#             vitA,
+#             agpoli,
+#             ncol=ncols,
+#             nrow=5,
+#             layout_matrix = rbind (rep(1,ncols),
+#                                    rep(2,ncols),
+#                                    rep(3,ncols),
+#                                    rep(4,ncols),
+#                                    rep(5,ncols)))
+#
 
-# trends per class
-
-CONSUMO_ALIMENTAR %>% 
-  filter (general_type %in% c("DD") !=T) %>%
-  group_by (general_type,position,region,unit_analysis,income_cat) %>% 
-  summarize (Zinc = (sum(ZINCO)),
-             Quantidade = sum(QTD),
-             PC_RENDA_MONET=mean(PC_RENDA_MONET)) %>%
-  
-  ggplot (aes(x=log10(PC_RENDA_MONET), 
-              y=log10(Zinc),
-              #group = income_cat,
-              fill = income_cat,
-              colour=income_cat))+
-  scale_fill_viridis_d(option = "viridis", begin =0.2,end=1)+
-  geom_point (aes(fill=income_cat,
-                  colour=income_cat),
-              alpha = 0.025)+
-  geom_smooth(method= "lm")+
-  facet_wrap(~general_type, ncol=5)+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle=0),
-        legend.position = c(0.92,0.15))
-
-
-# trends of protein consumption with income, per region
-CONSUMO_ALIMENTAR %>% 
-  filter (general_type %in% c("DD") !=T) %>%
-  group_by (general_type,position,region,unit_analysis) %>% 
-  
-  summarize (Zinc = (sum(ZINCO)),
-             Quantidade = sum(QTD),
-             PC_RENDA_MONET=mean(PC_RENDA_MONET))%>%
-  
-  ggplot (aes(x=log10(PC_RENDA_MONET), 
-              y=log10(Zinc),
-              group=region,
-              colour=region,
-              fill=region))+
-  geom_point(aes(colour=region,fill=region),alpha=0.01)+
-  scale_fill_viridis_d(option = "viridis", begin =0.2,end=1)+
-  geom_smooth(method= "lm")+
-  facet_wrap(~general_type, ncol=5)+
-  theme_classic()+
-  theme(axis.text.x = element_text(angle=0))
-
-
-
-
-# trend
-
-CONSUMO_ALIMENTAR %>% 
-  filter (general_type %in% c("seafood")) %>%
-  group_by (food_type,general_type,position,region,unit_analysis) %>% 
-  summarize (Zinc = (sum(ZINCO)),
-             Quantidade = sum(QTD),
-             PC_RENDA_MONET=mean(PC_RENDA_MONET))%>%
-  
-  ggplot (aes(x=log10(PC_RENDA_MONET), 
-              y=log10(Zinc),
-              group=region,
-              colour=region,
-              fill=region))+
-  geom_point(aes(colour=region,fill=region),alpha=0.05)+
-  scale_fill_viridis_d(option = "viridis", begin =0.2,end=1)+
-  geom_smooth(method= "glm")+
-  theme_classic()+
-  theme(axis.text.x = element_text(angle=0))
-
-
+rm(list=ls())

@@ -124,8 +124,10 @@ CONSUMO_ALIMENTAR$unit_analysis <- paste(CONSUMO_ALIMENTAR$UF,
 Documentacao <- read.xlsx (here ("POF_government", 
                                 "Cadastro de Produtos do Consumo Alimentar.xlsx"),sheet=1)
 
+
 # replace empty cells by NA
 Documentacao$protein_type[nchar(Documentacao$protein_type)==0] <- NA 
+
 
 # MATCHING FOOD TYPE WITH THE CODE
 # table(unique(CONSUMO_ALIMENTAR$V9001) %in% unique(Documentacao$`CÓDIGO DO ALIMENTO`))
@@ -145,12 +147,16 @@ CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
                                  MORADOR[match (CONSUMO_ALIMENTAR$unit_analysis,
                                                 MORADOR$unit_analysis),
                                           c("PC_RENDA_DISP","PC_RENDA_MONET", "COMPOSICAO","RENDA_TOTAL", "V0404", "V0405")])
+
+
 # change colnames
 colnames(CONSUMO_ALIMENTAR)[which(colnames(CONSUMO_ALIMENTAR) %in% 
                                                   c("V0404", "V0405"))] <- c("Sex", "Race")
 
+
 # recode sex
 CONSUMO_ALIMENTAR$Sex <- ifelse (CONSUMO_ALIMENTAR$Sex == 1, "Man", "Woman")
+
 
 # recode race
 CONSUMO_ALIMENTAR$Race <- as.character (CONSUMO_ALIMENTAR$Race)
@@ -162,11 +168,16 @@ CONSUMO_ALIMENTAR$Race <- recode(CONSUMO_ALIMENTAR$Race,
                         "5" = "indigena",
                         "9" = "nao_declarado")
 
+
+
 # COLUMNS WE DON'T NEED
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR [,which (colnames(CONSUMO_ALIMENTAR) %in% 
                                    c(paste ("V90",seq (15,30),sep=""),
                                             "COD_UNIDADE_MEDIDA_FINAL","COD_PREPARACAO_FINAL") == F
 )]
+
+
+
 
 
 
@@ -177,16 +188,20 @@ states <- read_excel (here ("POF_government",
 
 
 
+
+
 # df with state codes
 df_states <- data.frame (states = states$...1,
                          codes = substr(states$ESTRATOS,1,2)
 )
 
 
+
 # code of states
 CONSUMO_ALIMENTAR$state <- ((df_states [match (CONSUMO_ALIMENTAR$UF, 
                                                              df_states$codes),
                                                       "states"]))
+
 
 
 
@@ -203,15 +218,19 @@ CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
                           PIB[match (CONSUMO_ALIMENTAR$UF, PIB$cod_uf),
                                                       c("position", "region")])
 
+
+
 # remove NAs
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR [is.na(CONSUMO_ALIMENTAR$protein_type)!= T,]
 
 # discretisize income
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>% 
-  mutate (income_cat = cut(PC_RENDA_MONET,breaks = c(-1,1891,3782,9455,18910,200000),
+  mutate (income_cat = cut(PC_RENDA_MONET,breaks = c(-1,1891,3782,9455,18910,200000), # classes
                          labels = c("Class E", "Class D", "Class C", "Class B", "Class A")))  %>%
   filter (is.na(PC_RENDA_MONET) != T)
   
+
+
   
 # percentage of each class per State
 
@@ -248,11 +267,12 @@ class_state$N_pop <- as.numeric(class_state$X2010)
 tab_N_class_state <- (cast (data = class_state, 
       formula = Localidade ~ Nome,
       value="N_pop",
+      drop=F,
       fun.aggregate = sum))
 
 # melt
 tab_N_class_state_df <- melt(tab_N_class_state, id.vars = "Localidade")
-tab_N_class_state_df$Localidade [which(tab_N_class_state_df$Localidade == "Rio Grande do Sul")] <- "Rio Grande Do Sul"
+tab_N_class_state_df$Localidade [which(tab_N_class_state_df$Localidade == "Rio Grande do Sul")] <- "Rio Grande Do Sul" # adjust name
 
 # table proportion per class
 tab_prop_class_state <- (cast (data = class_state, 
@@ -260,53 +280,83 @@ tab_prop_class_state <- (cast (data = class_state,
                             value="N_pop",
                             fun.aggregate = sum))
 tab_prop_class_state[,c("Class A","Class B","Class C","Class D","Class E")] <- tab_prop_class_state[,c("Class A","Class B","Class C","Class D","Class E")]/rowSums(tab_prop_class_state[,c("Class A","Class B","Class C","Class D","Class E")])
+
+
 # melt
 tab_prop_class_state_df <- melt(tab_prop_class_state, 
                                 id.vars = "Localidade")
 tab_prop_class_state_df$Localidade [which(tab_prop_class_state_df$Localidade == "Rio Grande do Sul")] <- "Rio Grande Do Sul"
 
 
-
 # match with the complete dataset
-CONSUMO_ALIMENTAR$N_pop_class <- tab_N_class_state_df [match(paste (CONSUMO_ALIMENTAR$state, CONSUMO_ALIMENTAR$income_cat,sep="."),
-         paste (tab_N_class_state_df$Localidade, tab_N_class_state_df$Nome,sep=".")
-),"value"]
-CONSUMO_ALIMENTAR$proportion_pop_class <- tab_prop_class_state_df [match(paste (CONSUMO_ALIMENTAR$state, CONSUMO_ALIMENTAR$income_cat,sep="."),
-                                                             paste (tab_prop_class_state_df$Localidade, tab_prop_class_state_df$Nome,sep=".")
-),"value"]
+tab_N_class_state_df$interact_state_class <- paste (tab_N_class_state_df$Localidade, tab_N_class_state_df$Nome,sep=".")
+tab_prop_class_state_df$interact_state_class<- paste (tab_prop_class_state_df$Localidade, tab_prop_class_state_df$Nome,sep=".")
+CONSUMO_ALIMENTAR$interact_state_class <- paste (CONSUMO_ALIMENTAR$state, CONSUMO_ALIMENTAR$income_cat,sep=".")
+
+# POF data did not have all combinations of class and state
+length(unique(tab_prop_class_state_df$interact_state_class))
+length(unique(CONSUMO_ALIMENTAR$interact_state_class))
+
+# match -- some zeros will appear in the final table
+# total N
+CONSUMO_ALIMENTAR$N_pop_class <- tab_N_class_state_df [match(CONSUMO_ALIMENTAR$interact_state_class,
+                                                             tab_N_class_state_df$interact_state_class),
+                                                       "value"]
+# proportions
+CONSUMO_ALIMENTAR$proportion_pop_class <- tab_prop_class_state_df [match(CONSUMO_ALIMENTAR$interact_state_class,
+                                                                         tab_prop_class_state_df$interact_state_class),
+                                                                   "value"]
 
  
- # check
-cast (CONSUMO_ALIMENTAR, formula = state ~income_cat,
-      fun.aggregate = min,
+# check
+## NAs are due to missing samples in POF
+cast (CONSUMO_ALIMENTAR, formula = state~income_cat,
+      fun.aggregate = mean,
       na.rm=T,
+      drop=F,
       value= "N_pop_class")
 
-# inf - levels that did not exist in data 
+
+
+
+
+# examples : inf - levels that did not exist in data 
 which(CONSUMO_ALIMENTAR$state == "Alagoas" & CONSUMO_ALIMENTAR$income_cat == "Class A")
+
 
 # general food type
 
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>% 
   mutate(general_type = recode(protein_type, 
-                               "chicken" = "poultry",
-                               "chicken " = "poultry",
-                               "turkey" = "poultry",
-                               "duck" = "poultry",
-                               "lamb" = "goat",
-                               "beef/pork" = "beef&other",
-                               "beef/pork/chicken" = "beef&other",
-                               "pork/beef" = "beef&other",
-                               "SWfish" = "seafood",
-                               "SWfish/cephalopod/crustacean/mollusk" = "seafood",
-                               "crustacean" = "seafood",
-                               "mollusk" = "seafood",
-                               "cephalopod/crustacean/mollusk" = "seafood",        
-                               "SWfish/crustacean" = "seafood" ,
-                               "cephalopod" = "seafood" ,
-                               "Ifish" = "ImFish"
+                               "beef" = "Beef",
+                               "chicken" = "Poultry",
+                               "chicken " = "Poultry",
+                               "turkey" = "Poultry",
+                               "duck" = "Poultry",
+                               "lamb" = "Goat",
+                               "goat" = "Goat",
+                               "beef/pork" = "Beef&other",
+                               "beef/pork/chicken" = "Beef&other",
+                               "pork/beef" = "Beef&other",
+                               "SWfish" = "Seafood",
+                               "SWfish/cephalopod/crustacean/mollusk" = "Seafood",
+                               "crustacean" = "Seafood",
+                               "mollusk" = "Seafood",
+                               "cephalopod/crustacean/mollusk" = "Seafood",        
+                               "SWfish/crustacean" = "Seafood" ,
+                               "cephalopod" = "Seafood" ,
+                               "Ifish" = "Imported fish",
+                               "FWfish" = "Freshwater fish",
+                               "wildmeat" = "Wildmeat",
+                               "pork" = "Pork"
+                               
   )) %>% 
-  filter (DIA_ATIPICO == 2) # remove atypical days (1=atypical)
+  filter (DIA_ATIPICO == 2) %>% # remove atypical days (1=atypical)
+  dplyr::rename("Polyunsatured fat"= AGPOLI ,
+                "Calcium" = CALCIO,
+                "Iron" = FERRO,
+                "Zinc" = ZINCO,
+                "Vitamin-A" = VITA_RAE)
 
 
 

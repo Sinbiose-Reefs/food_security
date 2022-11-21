@@ -19,8 +19,14 @@ load(here ("output", "consumption_nutrients.RData"))
 binded_data <- bind_cols (table_supply_state, 
            consumption_nutrients %>%
              group_by(state_adj) %>%
-             summarise(across (ends_with("kg"), ~sum(.x,na.rm=T)))
-)
+             summarise(across (ends_with("kg"), ~sum(.x,na.rm=T)),
+                       mean_N_pop=sum(mean_N_pop,na.rm=T))
+            )
+# per capital landing
+binded_data <- binded_data %>%
+
+  mutate_each (funs(./mean_N_pop), ends_with("kg_1")) # landing of nutrients, per capita
+
 
 # organize data to plot
 colnames(binded_data) <- gsub ("FERRO", "Iron", colnames(binded_data))
@@ -28,12 +34,12 @@ colnames(binded_data) <- gsub ("AGPOLI", "Omega_3", colnames(binded_data))
 colnames(binded_data) <- gsub ("QTD_kg", "Catch_QTD_kg", colnames(binded_data))
 
 df_nut_data <- binded_data %>%
-  mutate (supply_higher_demand_catch = Catch_QTD_kg>CatchAmount_kg,
-          supply_higher_demand_zinc = Zinc_mu_kg > ZINCO_kg,
-          supply_higher_demand_iron = Iron_mu_kg > Iron_kg,
-          supply_higher_demand_calcium = Calcium_mu_kg > CALCIO_kg,
-          supply_higher_demand_vitaA = Vitamin_A_mu_kg > VITA_RAE_kg,
-          supply_higher_demand_omega3 = Omega_3_mu_kg > Omega_3_kg) %>%
+  mutate (supply_higher_demand_catch = Catch_QTD_kg>CatchAmount_kg_1,
+          supply_higher_demand_zinc = Zinc_mu_kg_1> ZINCO_kg,
+          supply_higher_demand_iron = Iron_mu_kg_1 > Iron_kg,
+          supply_higher_demand_calcium = Calcium_mu_kg_1 > CALCIO_kg,
+          supply_higher_demand_vitaA = Vitamin_A_mu_kg_1 > VITA_RAE_kg,
+          supply_higher_demand_omega3 = Omega_3_mu_kg_1 > Omega_3_kg) %>%
   mutate_if(is.logical, as.character) %>%
   mutate(supply_higher_demand_catch = recode(supply_higher_demand_catch, "TRUE" = "S>D",
                                        "FALSE" = "S<D"),
@@ -71,13 +77,13 @@ plot_all <-df_nut_data %>%
                group= state_adj,
                col=supply_higher_demand_catch,
                label = state_adj)) +
-  geom_point(shape=2,size=2,stroke=2)+
+  geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
   my_theme+
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
-  scale_colour_viridis_d(begin=0.2,end=0.8)
+  scale_colour_viridis_d(begin=0.8,end=0.8)
 
 
 
@@ -87,11 +93,11 @@ plot_zinc<-df_nut_data %>%
   select("state_adj",contains("Zinc"))  %>%
   melt (id.vars = c("state_adj", "supply_higher_demand_zinc")) %>%
   ggplot (aes (x= variable, 
-                   y=log(value),
+                   y=(value),
                    group= state_adj,
                    col=supply_higher_demand_zinc,
                    label = state_adj)) +
-  geom_point(shape=2,size=2,stroke=2)+
+  geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
   my_theme+
@@ -106,11 +112,12 @@ plot_calcium<-df_nut_data %>%
   select("state_adj",contains("calci"))  %>%
   melt (id.vars = c("state_adj", "supply_higher_demand_calcium")) %>%
   ggplot (aes (x= variable, 
-               y=log(value),
+               y=(value),
                group= state_adj,
                col=supply_higher_demand_calcium,
+               
                label = state_adj)) +
-  geom_point(shape=2,size=2,stroke=2)+
+  geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
   my_theme+
@@ -126,11 +133,11 @@ plot_iron<-df_nut_data %>%
   select("state_adj",contains("iron"))  %>%
   melt (id.vars = c("state_adj", "supply_higher_demand_iron")) %>%
   ggplot (aes (x= variable, 
-               y=log(value),
+               y=(value),
                group= state_adj,
                col=supply_higher_demand_iron,
                label = state_adj)) +
-  geom_point(shape=2,size=2,stroke=2)+
+  geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
   my_theme+
@@ -147,11 +154,11 @@ plot_omega3<-df_nut_data %>%
   select("state_adj",contains("omega"))  %>%
   melt (id.vars = c("state_adj", "supply_higher_demand_omega3")) %>%
   ggplot (aes (x= variable, 
-               y=log(value),
+               y=(value),
                group= state_adj,
                col=supply_higher_demand_omega3,
                label = state_adj)) +
-  geom_point(shape=2,size=2,stroke=2)+
+  geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
   my_theme+
@@ -167,11 +174,11 @@ plot_vitA<-df_nut_data %>%
   select("state_adj",contains("vita"))  %>%
   melt (id.vars = c("state_adj", "supply_higher_demand_vitaA")) %>%
   ggplot (aes (x= variable, 
-               y=log(value),
+               y=(value),
                group= state_adj,
                col=supply_higher_demand_vitaA,
                label = state_adj)) +
-  geom_point(shape=2,size=2,stroke=2)+
+  geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
   theme(legend.position = c(0.15,0.87),
@@ -190,6 +197,8 @@ plot_vitA<-df_nut_data %>%
 
 # arrange
 
+
+pdf (here ("output", "demand_supply"),width=10,height=8)
 grid.arrange(plot_all,
              plot_zinc,
              plot_calcium,
@@ -197,7 +206,7 @@ grid.arrange(plot_all,
              plot_omega3,
              plot_vitA,ncol=3,nrow=2)
 
-
+dev.off()
 
 
 
@@ -206,77 +215,78 @@ grid.arrange(plot_all,
 # help here : https://cran.r-project.org/web/packages/geobr/vignettes/intro_to_geobr.html
 
 # load states
-BR_states <- read_state()
-
-# join the databases
-states_consumption <- dplyr::left_join(BR_states, 
-                                       binded_data, 
-                                       by = c("name_state" = "state_adj"))
-
-# map
-plot_consumption <- states_consumption %>% 
-  filter (is.na(OtherArea)!=T) %>% 
-  ggplot() +
-  geom_sf(aes(fill=ZINCO_kg),
-          colour="black",#NA 
-          size=.15) +
-  labs(subtitle="Zinc consumption, Brazilian States, 2017-2018", 
-       size=8) +
-  scale_fill_distiller(palette = "RdGy", 
-                       name="Consumption\n(mg/kg/year)", 
-                       direction=-1,
-                       limits = c(min(states_consumption$ZINCO_kg),
-                                  max(states_consumption$ZINCO_kg))) +
-  theme(legend.position = "top", #c(0.85,0.2),
-        legend.direction = "horizontal",
-        legend.text = element_text(size=8,angle=340),
-        panel.background = element_rect(fill = "white",
-                                        colour = "gray",
-                                        size = 0.5, linetype = "solid"),
-        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
-                                        colour = "gray"), 
-        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
-                                        colour = "gray"))
-
-
-
-
-# map
-plot_supply <- states_consumption %>% 
-  filter (is.na(OtherArea)!=T) %>% 
-  ggplot() +
-  geom_sf(aes(fill=Zinc_mu_kg),
-          colour="black",#NA 
-          size=.15) +
-  labs(subtitle="Zinc supply, Brazilian States, 2000-2015", 
-       size=8) +
-  scale_fill_distiller(palette = "RdGy", 
-                       name="Zinc landings \n(kg/year)", 
-                       direction=-1,
-                       limits = c(min(states_consumption$Zinc_mu_kg),
-                                  max(states_consumption$Zinc_mu_kg))) +
-  theme(legend.position = "top", #c(0.85,0.2),
-        legend.direction = "horizontal",
-        legend.text = element_text(size=8,angle=340),
-        panel.background = element_rect(fill = "white",
-                                        colour = "gray",
-                                        size = 0.5, linetype = "solid"),
-        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
-                                        colour = "gray"), 
-        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
-                                        colour = "gray"))
-
-
-
-# arrange
-
-grid.arrange (plot_supply,
-              plot_consumption,
-              ncol=2)
-
-
-# plot the relationship between demand and supply
-
-ggplot (states_consumption, aes (prot_landed_kg,mean_year_cons)) +
-  geom_point()+
-  geom_smooth(method = "loess")
+#BR_states <- read_state()
+#
+## join the databases
+#states_consumption <- dplyr::left_join(BR_states, 
+#                                       binded_data, 
+#                                       by = c("name_state" = "state_adj"))
+#
+## map
+#plot_consumption <- states_consumption %>% 
+#  filter (is.na(OtherArea)!=T) %>% 
+#  ggplot() +
+#  geom_sf(aes(fill=ZINCO_kg),
+#          colour="black",#NA 
+#          size=.15) +
+#  labs(subtitle="Zinc consumption, Brazilian States, 2017-2018", 
+#       size=8) +
+#  scale_fill_distiller(palette = "RdGy", 
+#                       name="Consumption\n(mg/kg/year)", 
+#                       direction=-1,
+#                       limits = c(min(states_consumption$ZINCO_kg),
+#                                  max(states_consumption$ZINCO_kg))) +
+#  theme(legend.position = "top", #c(0.85,0.2),
+#        legend.direction = "horizontal",
+#        legend.text = element_text(size=8,angle=340),
+#        panel.background = element_rect(fill = "white",
+#                                        colour = "gray",
+#                                        size = 0.5, linetype = "solid"),
+#        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+#                                        colour = "gray"), 
+#        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+#                                        colour = "gray"))
+#
+#
+#
+#
+## map
+#plot_supply <- states_consumption %>% 
+#  filter (is.na(OtherArea)!=T) %>% 
+#  ggplot() +
+#  geom_sf(aes(fill=Zinc_mu_kg_1),
+#          colour="black",#NA 
+#          size=.15) +
+#  labs(subtitle="Zinc supply, Brazilian States, 2000-2015", 
+#       size=8) +
+#  scale_fill_distiller(palette = "RdGy", 
+#                       name="Zinc landings \n(kg/year)", 
+#                       direction=-1,
+#                       limits = c(min(states_consumption$Zinc_mu_kg_1),
+#                                  max(states_consumption$Zinc_mu_kg_1))) +
+#  theme(legend.position = "top", #c(0.85,0.2),
+#        legend.direction = "horizontal",
+#        legend.text = element_text(size=8,angle=340),
+#        panel.background = element_rect(fill = "white",
+#                                        colour = "gray",
+#                                        size = 0.5, linetype = "solid"),
+#        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+#                                        colour = "gray"), 
+#        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+#                                        colour = "gray"))
+#
+#
+#
+## arrange
+#
+#grid.arrange (plot_supply,
+#              plot_consumption,
+#              ncol=2)
+#
+#
+## plot the relationship between demand and supply
+#
+#ggplot (states_consumption, aes (prot_landed_kg,mean_year_cons)) +
+#  geom_point()+
+#  geom_smooth(method = "loess")
+#

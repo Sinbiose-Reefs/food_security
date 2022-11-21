@@ -164,7 +164,7 @@ TBCA_nutrients <- read.xlsx (here ("data_fisheries_nutrients","Nutrients_TBCA.xl
 TBCA_nutrients$especific_source <- gsub ("_", " ", TBCA_nutrients$especific_source)
 
 
-# set trace nutrients to 0.005 , from here http://www.tbca.net.br/
+# set trace nutrients (tr) to 0.005 , from here http://www.tbca.net.br/
 
 TBCA_nutrients$`VA(mcg)_re` <- ifelse (TBCA_nutrients$`VA(mcg)_re` =="tr", 0.005,TBCA_nutrients$`VA(mcg)_re`)
 TBCA_nutrients$`VA(mcg)_rae` <- ifelse (TBCA_nutrients$`VA(mcg)_rae` =="tr", 0.005,TBCA_nutrients$`VA(mcg)_rae`)
@@ -173,7 +173,7 @@ TBCA_nutrients$`Fe(mg)` <- ifelse (TBCA_nutrients$`Fe(mg)` =="tr", 0.005,TBCA_nu
 
 # change colnames to match with other nutrient data
 colnames(TBCA_nutrients) <- c("scientificName", "protein_type", "Protein_mu", "Zinc_mu", "Selenium_mu", "Calcium_mu", 
-                              "Iron_mu", "Vitamin_A_RE","Vitamin_A_mu", "Omega_3_mu", "Class", "Seafood")
+                              "Iron_mu", "Vitamin_A_RE","Vitamin_A_mu", "Omega_3_mu",  "Seafood")
 
 # numeric
 TBCA_nutrients <- TBCA_nutrients %>% mutate(Protein_mu = as.numeric(Protein_mu),
@@ -208,13 +208,29 @@ fisheries_species [which(fisheries_species$scientificName %in% TBCA_nutrients$sc
                    c("Protein_mu","Zinc_mu","Selenium_mu","Calcium_mu","Iron_mu","Vitamin_A_mu","Omega_3_mu")]  <- TBCA_nutrients[which(TBCA_nutrients$scientificName %in% TBCA_nutrients$scientificName[4]),
                                                                                                                                   c("Protein_mu","Zinc_mu","Selenium_mu","Calcium_mu","Iron_mu","Vitamin_A_mu","Omega_3_mu")]
 
+# matching at higher levels
+
+TBCA_nutrients_raw$genus <- sapply (strsplit (TBCA_nutrients_raw$scientificName, " "), "[[",1)
+
+# select genus of fish dataset with missing nutrient data
+sel_genus <-unique(fisheries_species[is.na(fisheries_species$Calcium_mu),"genus"])[which(unique(fisheries_species[is.na(fisheries_species$Calcium_mu),"genus"]) %in% TBCA_nutrients_raw$genus)]
+
+# data to fill
+data_to_fill <- fisheries_species[which(is.na(fisheries_species$Calcium_mu) & 
+                          fisheries_species$genus %in% sel_genus)
+                  ,which(colnames(fisheries_species) %in% colnames(TBCA_nutrients_raw))]
+
+# match
+data_to_match <- TBCA_nutrients_raw [match (data_to_fill$genus, TBCA_nutrients_raw$genus),which(colnames(TBCA_nutrients_raw) %in% colnames(data_to_fill))]
+rownames(data_to_match) <- rownames(data_to_fill)
+# match
+fisheries_species[which(rownames(fisheries_species) %in% rownames(data_to_match)),c("Protein_mu", "Zinc_mu", "Selenium_mu","Calcium_mu","Iron_mu","Vitamin_A_mu","Omega_3_mu")] <-data_to_match[,c("Protein_mu", "Zinc_mu", "Selenium_mu","Calcium_mu","Iron_mu","Vitamin_A_mu","Omega_3_mu")]
+
 
 # remove missing data
 fisheries_species  <- fisheries_species[is.na(fisheries_species$Protein_mu) != T,] # removing also other taxa besides fish (missing nutritional data)
 
 table(fisheries_species$taxonRank) # only species
-
-
 
 # obtain high tax level data
 fisheries_genus <- fisheries[is.na(fisheries$taxonRank) == T,]
@@ -310,7 +326,7 @@ table_supply_state <- fisheries_wtrait %>%
           CatchAmount_kg = CatchAmount_t*1000) %>% # catch into kg
   mutate_each(funs(.*CatchAmount_kg), ends_with("kg")) %>% # summarize by spate
   group_by (OtherArea) %>% # group and 
-  summarise(across (ends_with("kg"), ~mean(.x,na.rm=T)))  # summarize per state
+  summarise(across (ends_with("kg"), list(~mean(.x,na.rm=T))))  # summarize per state
 
 # save
 save (table_supply_state, file = here ("output", "table_supply_state.RData"))
@@ -474,11 +490,11 @@ plot_nut <- ggplot (fish_year_nutrition, aes (x=year,
         strip.text.x = element_text(size = 10, color = "black", 
                                     face = "bold"),
         strip.background = element_rect(color="black", 
-                                        fill="gray60",
+                                        fill="gray90",
                                         size=1.5, linetype="solid"
         )) + 
-  scale_colour_viridis_d(name = "Region", begin=0,end=1)
-
+  scale_fill_distiller(palette = "Spectral",
+                       name = "Region")
 
 
 plot_nut
@@ -582,7 +598,8 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
     #pcoa_fish_year <- melt (pcoa_fish_year)
     pcoa_nut <- data.frame (pcoa_nut$vectors[,1:2],
                             sp = rownames(pcoa_nut$vectors))
-    
+    pcoa_nut$abb_spp <-paste (substr(sapply (strsplit(pcoa_nut$sp," "), "[[",1),1,3),
+                              substr(sapply (strsplit(pcoa_nut$sp," "), "[[",2),1,3),sep=" ")
     
     
     # corelation to project nutrients
@@ -604,10 +621,10 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
       #                vjust=1,
       #                max.overlaps=20)+
       
-      geom_text(aes(label=ifelse(Axis.1>2 |
-         Axis.1 < -2 |
-         Axis.2 >2 |
-         Axis.2 < -2,as.character(sp),'')),
+      geom_text(aes(label=ifelse(Axis.1>1.5 |
+         Axis.1 < -1.5 |
+         Axis.2 >1.5 |
+         Axis.2 < -1.5,as.character(abb_spp),'')),
       size=2.5,vjust=1) +
       coord_equal() +
       theme_bw() +
@@ -677,7 +694,7 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
 
 # arrange and save
   
-pdf (here ("output", "nutrients.pdf"),height=7,width=11)
+pdf (here ("output", "nutrients"),height=7,width=11)
 
 composition2<-grid.arrange(ordination_nut[[1]]+ggtitle ("North"),
                            ordination_nut[[2]]+ggtitle ("Northeast"),
@@ -715,6 +732,15 @@ nutrients_more_catched <- nutrients_more_catched %>%
   #separate( Category,  c("Nutrient", "N","Vals"))
 
 
+# ucides = the average of other mollusks
+nutrients_more_catched [grep ("Ucides",nutrients_more_catched$TaxonName),"Omega_3_mu_1"] <-TBCA_nutrients_raw %>%
+  filter (protein_type == "crustacean") %>%
+  group_by(protein_type) %>%
+  summarise (across (ends_with("_mu"), ~mean(.x,na.rm=T))) %>%
+  select(Omega_3_mu)
+
+
+
 # organize data to plot
 nutrients_to_plot <- lapply (c("Zinc","Iron", "Omega_3", "Calcium","Selenium","Vitamin_A"), function (i)  {
                  
@@ -743,6 +769,7 @@ nutrients_to_plot<- nutrients_to_plot %>%
           spp=substr(second,1,3),
           abb_name = paste (gen, spp))
 
+
 # plot  
 # groups means to plot
 gr.means<- nutrients_to_plot %>% 
@@ -751,7 +778,7 @@ gr.means<- nutrients_to_plot %>%
 
 
 # plot 1 (the most catched spp)
-mc_spp <- ggplot (nutrients_to_plot,aes (y=reorder(abb_name,Average ),
+mc_spp <- ggplot (nutrients_to_plot,aes (y=reorder(abb_name,Average),
                 x=Average ))+
   geom_point() +
   geom_vline(data= gr.means,
@@ -778,15 +805,45 @@ mc_spp <- ggplot (nutrients_to_plot,aes (y=reorder(abb_name,Average ),
 
 # plot of general types of protein
 # summarize
-taxon_nutrient <- TBCA_nutrients_raw %>% 
-  group_by(protein_type) %>%
-  summarise(across(Protein_mu:Omega_3_mu, ~ mean(.x, na.rm = TRUE))) %>%
+
+# match fish nutrients in the TBCA_nutrients_raw table
+
+taxon_nutrient <- bind_rows (
+  # brazilian table of nutrients
+  TBCA_nutrients_raw %>% 
+                      filter (protein_type != "SWfish") %>%  # rm sea water fish
+                      group_by(protein_type) %>%
+                      summarise(across(Protein_mu:Omega_3_mu, ~ mean(.x, na.rm = TRUE))),
+  # nutrients hicks                    
+  fisheries_wtrait %>%
+                     filter (class %in% c("Actinopteri","Elasmobranchii")) %>%
+                     #filter (TaxonName %in% nutrients_more_catched$TaxonName)%>% # the most catched fish
+                     group_by(class) %>%
+                     summarize (across (ends_with("_mu"), ~mean(.x,na.rm=T))) %>%
+                     dplyr::rename("protein_type"="class"))%>%
+  
+  
   select ("protein_type",#"Protein_mu", 
           "Zinc_mu", "Selenium_mu", "Calcium_mu", "Iron_mu", 
           #"Vitamin_A_RE",
           "Vitamin_A_mu", "Omega_3_mu") %>%
-  pivot_longer(-protein_type)
+  mutate(protein_type = forcats::fct_relevel(protein_type, c(
+                                     "beef",
+                                     "goat",
+                                     "lamb",
+                                     "pork",
+                                     "poultry",
+                                     "FWfish",
+                                     "Ifish",
+                                     "crustacean",
+                                     "cephalopod",
+                                     "mollusk",
+                                      "Elasmobranchii", 
+                                     "Actinopteri"))) %>%
+  pivot_longer(-protein_type) 
   
+  
+
 # group means per taxon
 gr.means.tax <- taxon_nutrient %>% 
   group_by(name) %>% 
@@ -801,7 +858,8 @@ gr.means.tax <- taxon_nutrient %>%
 #FAO<-FAO [match (gr.means.tax$name, FAO$label),]
 # plot 
 
-plot2<- ggplot (taxon_nutrient,aes(x=value, y=reorder(protein_type, value)))+
+plot2<- ggplot (taxon_nutrient,aes(x=value, 
+                                   y=protein_type))+#reorder(protein_type, value)))+
     geom_point()+
     facet_wrap(~name ,scales = "free_x",ncol=6)+
   theme_bw() +
@@ -821,16 +879,15 @@ plot2<- ggplot (taxon_nutrient,aes(x=value, y=reorder(protein_type, value)))+
              linetype=1,
              alpha=0.3,
              col="red") + 
-  labs(subtitle = "B) Nutrient content in several protein sources (Brazilian Food Composition Table, 2022)")
+  labs(subtitle = "B) Nutrient content in several protein sources (Brazilian Food Composition Table, 2022; Hicks et al. (2019))")
   
 
 
 
 
 # arrange
-require(gridExtra)
-
-grid.arrange(mc_spp,
+pdf(here ("output", "Nutrients_supply_consumed"),width=10,height=8)
+gridExtra::grid.arrange(mc_spp,
              plot2,
              nrow=5,
              ncol=7,
@@ -845,6 +902,7 @@ grid.arrange(mc_spp,
                )
 )
 
+dev.off()
 
 # end
 rm(list=ls())
