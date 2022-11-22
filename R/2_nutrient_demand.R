@@ -50,7 +50,7 @@ foodType_ind[,sel_cols]<-foodType_ind[,sel_cols]/foodType_ind[,"(all)"]
 foodType_ind[is.na(foodType_ind)] <- 0
 
 
-pdf (here ("output", "barplot_consumption"),width=5,height=7)
+pdf (here ("output", "barplot_consumption"),width=4,height=7)
 
 # aggregate
 foodType_ind %>%

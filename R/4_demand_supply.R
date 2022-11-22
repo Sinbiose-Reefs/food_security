@@ -60,7 +60,7 @@ df_nut_data <- binded_data %>%
 
 
 # plot settings
-def_max.overlaps<-4
+def_max.overlaps<-20
 my_theme<- theme(legend.position = "none",
                 axis.title.x = element_blank(),
                 axis.text.x = element_text(size=8, 
