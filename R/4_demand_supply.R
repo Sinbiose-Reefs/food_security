@@ -75,16 +75,18 @@ plot_all <-df_nut_data %>%
   ggplot (aes (x= variable, 
                y=log(value),
                group= state_adj,
-               col=supply_higher_demand_catch,
                label = state_adj)) +
-  geom_point(shape=1,size=3,stroke=2)+
-  geom_line(size =1)+
+  geom_point(shape=1,size=3,stroke=2,
+             col="#00BCC0")+
+  geom_line(size =1,
+            col="#00BCC0")+
   theme_bw()+
   my_theme+
   geom_text_repel(size=2,
-                  max.overlaps = def_max.overlaps)+
+                  col="#00BCC0",
+                  max.overlaps = def_max.overlaps)#+
   #scale_colour_viridis_d(begin=0.8,end=0.8)
-  scale_fill_distiller(palette = "Spectral",direction=1)
+  #scale_fill_distiller(palette = "Spectral",direction=1)
 
 
 
@@ -205,13 +207,15 @@ plot_vitA<-df_nut_data %>%
 # arrange
 
 
-pdf (here ("output", "demand_supply"),width=10,height=8)
-grid.arrange(plot_all,
-             plot_zinc,
-             plot_calcium,
-             plot_iron,
-             plot_omega3,
-             plot_vitA,ncol=3,nrow=2)
+pdf (here ("output", "demand_supply"),width=10,height=6)
+grid.arrange(plot_all+ylab("Per capita kg/year"),
+             plot_zinc+theme (axis.title = element_blank()),
+             plot_calcium+theme (axis.title = element_blank()),
+             plot_iron+theme (axis.title = element_blank()),
+             #plot_omega3,
+             plot_vitA+theme (axis.title = element_blank()),
+             layout_matrix = rbind (c (1,2,3),
+                                    c(1,4,5)))
 
 dev.off()
 
