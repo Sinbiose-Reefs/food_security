@@ -111,11 +111,16 @@ CONSUMO_ALIMENTAR$unit_analysis <- paste(CONSUMO_ALIMENTAR$UF,
                                          
                                sep = "_")
 
-# interviewees
-#length(unique(CONSUMO_ALIMENTAR$unit_analysis ))
+# Number of interviewees
+
+length(unique(CONSUMO_ALIMENTAR$unit_analysis ))
+
+
 #View(CONSUMO_ALIMENTAR[which(CONSUMO_ALIMENTAR$COD_UPA == "110000016"),])
 #table(CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$unit_analysis == CONSUMO_ALIMENTAR$unit_analysis[1]),"V9001"],
 #      CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$unit_analysis == CONSUMO_ALIMENTAR$unit_analysis[1]),"QUADRO"])
+
+
 
 
 
@@ -356,11 +361,33 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
                 "Calcium" = CALCIO,
                 "Iron" = FERRO,
                 "Zinc" = ZINCO,
-                "Vitamin-A" = VITA_RAE)
+                "Vitamin-A" = VITA_RAE,
+                "Magnesium" = MAGNESIO) %>% 
+  filter (position == "sea" & general_type != "DD")
 
 
 
+# useful data to report in the paper
+# sex
+colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
+             CONSUMO_ALIMENTAR$Sex)>0)/length(unique(CONSUMO_ALIMENTAR$unit_analysis))
+# race
+round (colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
+               CONSUMO_ALIMENTAR$Race)>0)/length(unique(CONSUMO_ALIMENTAR$unit_analysis)),2)
+# class
+round (colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
+               CONSUMO_ALIMENTAR$income_cat)>0)/length(unique(CONSUMO_ALIMENTAR$unit_analysis)),2)
 
+# state
+dat_state<- data.frame (int=(colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
+                                CONSUMO_ALIMENTAR$state)>0))[order((colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
+                                                                                   CONSUMO_ALIMENTAR$state)>0)),decreasing=T)])
+dat_state$prop <- dat_state$int/length(unique(CONSUMO_ALIMENTAR$unit_analysis))
+(dat_state <- rbind (dat_state, 
+       data.frame (int=sum(dat_state$int),
+                    prop=sum(dat_state$prop))
+))
+write.xlsx(dat_state,file = here ("output", "state_interviewees.xlsx"), rowNames=T)
 
 # save the dataset to data analysis
 save (CONSUMO_ALIMENTAR, file = here ("output",
