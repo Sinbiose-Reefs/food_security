@@ -27,8 +27,7 @@ load (here ("output",
 
 # 1 - proportion
 
-foodType_ind <- dcast (data = CONSUMO_ALIMENTAR %>% 
-                         filter (position == "sea" & general_type != "DD"), 
+foodType_ind <- dcast (data = CONSUMO_ALIMENTAR, 
        formula = unit_analysis+income_cat+region~general_type,
        value.var= "QTD",
        fun.aggregate = sum,
@@ -109,17 +108,18 @@ consumption_nutrients <- filter_interesting_food %>%
           Iron, 
           Zinc, 
           `Vitamin-A`, 
-          `Polyunsatured fat`) %>% # select  variables (nutrients) to test
+          `Polyunsatured fat`,
+          Magnesium) %>% # select  variables (nutrients) to test
   #mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
   group_by(state,income_cat,unit_analysis) %>%  # summarize by person
-  summarise(across (QTD:`Polyunsatured fat`, ~sum(.x, na.rm=T)), # sum of personal consumption
+  summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
             mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
             Ninterv = n_distinct(unit_analysis)) %>% #, # N interviewers
             #Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
   #group_by(state,income_cat,unit_analysis) %>%
   #summarise( sum_nut = mean( sum_nut,na.rm=T)) %>% #, # the average across the N days
              #Ndays=sum(Ndays,na.rm=T)) %>%
-  mutate (across (QTD:`Polyunsatured fat`,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
+  mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
           mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
           Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
   group_by(state,income_cat) %>% # further group by state and class (summarize individual consumption)
@@ -132,7 +132,8 @@ consumption_nutrients <- filter_interesting_food %>%
               "Iron_kg",
               "Zinc_kg",
               "Vitamin-A_kg",
-              "Polyunsatured fat_kg"), ~replace_na(.,0)) %>%
+              "Polyunsatured fat_kg",
+              "Magnesium_kg"), ~replace_na(.,0)) %>%
   mutate(state_adj = recode(state, "Mato Grosso do Sul" = "Mato Grosso Do Sul",
                             "Rio de Janeiro" = "Rio De Janeiro",
                             "Rio Grande do Norte" = "Rio Grande Do Norte",
@@ -209,19 +210,23 @@ p1 <- ggplot(data = total_consumption_data) +
   geom_sf(aes(fill=QTD),
           colour="black",#NA 
           size=.15) +
-  labs(subtitle="Total food consumption, Brazilian States, 2017-2018", 
+  labs(subtitle="Total seafood consumption, Brazilian coastal states, 2017-2018", 
        size=8) +
   scale_fill_distiller(palette = "Spectral", 
                        name="(kg/year)", 
                        na.value = "gray80",
                        direction=-1,
-                       limits = c(min(states_consumption$QTD),
-                                  max(states_consumption$QTD))) +
+                       limits = c(min(states_consumption$QTD,na.rm=T),
+                                  max(states_consumption$QTD,na.rm=T)),
+                       breaks = round (seq(min(states_consumption$QTD,na.rm=T),
+                                    max(states_consumption$QTD,na.rm=T),
+                                    26),1)) +
   no_axis+
   facet_wrap(~income_cat,scales="fixed",ncol=5) + 
   theme(legend.position = "top",
         legend.direction = "horizontal")  
   
+p1
 
 # data to the pie chart
 data_pie <- data.frame (
@@ -235,6 +240,7 @@ data_pie <- data.frame (
               Zinc_kg,
               `Vitamin-A_kg`,
               `Polyunsatured fat_kg`,
+              Magnesium_kg,
               lat,
               lon))%>%
   complete(income_cat) %>%
@@ -242,7 +248,8 @@ data_pie <- data.frame (
               "Iron_kg",
               "Zinc_kg",
               "Vitamin.A_kg",
-              "Polyunsatured.fat_kg"), ~replace_na(.,0))
+              "Polyunsatured.fat_kg",
+              "Magnesium_kg"), ~replace_na(.,0))
 
 # plot
 
@@ -255,7 +262,8 @@ p2<-ggplot() + geom_scatterpie(aes(x=lon, y=lat,
                                   "Iron_kg",
                                   "Zinc_kg",
                                   "Vitamin.A_kg",
-                                  "Polyunsatured.fat_kg"),
+                                  "Polyunsatured.fat_kg",
+                                  "Magnesium_kg"),
                            color=NA) + 
   coord_equal()+
   scale_fill_viridis_d(option="viridis") +
@@ -271,8 +279,9 @@ p2<-ggplot() + geom_scatterpie(aes(x=lon, y=lat,
         panel.grid.minor =element_blank())
  
 
+p2
 
-pdf (here ("output", "Map_nutrients.pdf"),width=10,height=9)
+pdf (here ("output", "Map_nutrients"),width=10,height=9)
 
 # arrange maps
 grid.arrange(p1+theme(plot.subtitle =  element_blank()),p2,
