@@ -541,7 +541,25 @@ fish_genus_region <- lapply (seq (1,ncol(fish_genus_region)), function (i){
 most_catched_list <- (sapply (fish_genus_region, "[[", "spp_catch",simplify=F))
 names(most_catched_list) <- c("North","Northeast", "Southeast", "South")
 
-lapply (most_catched_list,names)
+# table of names
+
+tab_names <- lapply (most_catched_list, function (i) 
+  
+  data.frame (Catch_amount =i,
+              Species_taxon= names(i),
+             Abbreviation = paste (substr (sapply (strsplit (names(i), " "), "[[", 1),1,3),
+                         substr (sapply (strsplit (names(i), " "), "[[", 2),1,3),
+                         sep=" ")
+  )
+)
+# melt
+tab_names<-do.call(rbind, tab_names)
+
+# save
+write.xlsx (tab_names, file = here ("output", "tab_names_catch.xlsx"), 
+            asTable = F, rowNames =T)
+
+
 
 # gather the nutrient data for these spp
 
@@ -830,7 +848,6 @@ taxon_nutrient <- bind_rows (
   mutate(protein_type = forcats::fct_relevel(protein_type, c(
                                      "beef",
                                      "goat",
-                                     "lamb",
                                      "pork",
                                      "poultry",
                                      "FWfish",
@@ -840,6 +857,18 @@ taxon_nutrient <- bind_rows (
                                      "mollusk",
                                       "Elasmobranchii", 
                                      "Actinopteri"))) %>%
+  
+  mutate(protein_type = recode(protein_type,
+                               "beef" = "Beef",
+                               "goat" = "Goat",
+                               "pork" = "Pork",
+                               "poultry" = "Poultry",
+                               "FWfish" = "Freshwater fish",
+                               "Ifish" = "Imported fish",
+                               "crustacean" = "Crustacean",
+                               "cephalopod" = "Cephalopods",
+                               "mollusk" = "Mollusks")) %>%
+  
   pivot_longer(-protein_type) 
   
   
