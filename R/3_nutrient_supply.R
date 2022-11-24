@@ -484,7 +484,7 @@ plot_nut <- ggplot (fish_year_nutrition, aes (x=year,
   ylab ("Content of nutrients") + 
   xlab("Year")+
   theme_classic() + 
-  theme(axis.text = element_text(size=5),
+  theme(axis.text = element_text(size=8),
         axis.title = element_text(size=13),
         strip.text = element_text(face="bold"),
         strip.text.x = element_text(size = 10, color = "black", 
@@ -492,7 +492,9 @@ plot_nut <- ggplot (fish_year_nutrition, aes (x=year,
         strip.background = element_rect(color="black", 
                                         fill="gray90",
                                         size=1.5, linetype="solid"
-        )) + 
+        ),
+        legend.position = "top",
+        legend.direction = "horizontal") + 
   scale_fill_distiller(palette = "Spectral",
                        name = "Region")
 
@@ -719,10 +721,11 @@ composition2<-grid.arrange(ordination_nut[[1]]+ggtitle ("North"),
                            ordination_nut[[3]]+ggtitle ("Southeast"),
                            ordination_nut[[4]]+ggtitle ("South"),
                            plot_nut,
-                           ncol=4,nrow=6,
-                           layout_matrix = rbind (c (1,2,3,4),
-                                                  c (1,2,3,4),
-                                                  c (1,2,3,4),
+                           ncol=4,nrow=7,
+                           layout_matrix = rbind (c (1,1,2,2),
+                                                  c (1,1,2,2),
+                                                  c (3,3,4,4),
+                                                  c (3,3,4,4),
                                                   c (5,5,5,5),
                                                   c (5,5,5,5),
                                                   c (5,5,5,5)))
