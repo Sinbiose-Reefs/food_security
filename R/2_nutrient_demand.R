@@ -39,7 +39,7 @@ foodType_ind <- dcast (data = CONSUMO_ALIMENTAR,
 
 # proportion (NAs are produced because each individual only belongs to one social class)
 sel_cols <- colnames(foodType_ind)[seq (which(colnames(foodType_ind) == "Beef") , 
-                            which(colnames(foodType_ind) == "Wildmeat"),
+                            which(colnames(foodType_ind) == "Seafood"),
                             1)]
 
 
@@ -56,15 +56,25 @@ foodType_ind %>%
   select (-`(all)`) %>%
   filter (is.na(Beef) !=T) %>%
   group_by(income_cat,region) %>%
-  summarise(across (Beef:Wildmeat,~ mean(.x, na.rm = TRUE))) %>% 
+  summarise(across (Beef:Seafood,~ mean(.x, na.rm = TRUE))) %>% 
   gather ("food_type", "proportion", -income_cat,-region) %>%
+  mutate(food_type = factor(food_type, levels = c("Beef", 
+                                                 "Beef&other",
+                                                 "Game",
+                                                 "Goat",
+                                                 "Pork",
+                                                 "Poultry",
+                                                 "Freshwater fish",
+                                                 "Imported fish",
+                                                  "Seafood")))%>%
   ggplot (aes (fill=food_type, 
                x=(income_cat),
                y=proportion))+
     geom_bar (position="fill", stat="identity") +
+  coord_polar(theta = "y")+
   #scale_fill_viridis_d()+
   scale_fill_brewer(palette = "Spectral",direction=1)+
-  facet_wrap(~region,nrow=5,ncol=1)+
+  facet_wrap(~region,nrow=2,ncol=2)+
   theme(axis.text.x = element_text(angle=90),
         panel.background = element_rect(fill = "white",
                                         colour = "gray",
@@ -97,6 +107,7 @@ filter_interesting_food <- CONSUMO_ALIMENTAR %>%
 fun_kg_year <- function (x) {(x/1000)*365}
 
 
+
 # filter the days
 consumption_nutrients <- filter_interesting_food %>%
   arrange(state)%>% # ordering states
@@ -123,7 +134,7 @@ consumption_nutrients <- filter_interesting_food %>%
           mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
           Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
   group_by(state,income_cat) %>% # further group by state and class (summarize individual consumption)
-  summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)) , # mean or sum?
+  summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)) , # per capita consumption (mean across interviewees)
             mean_N_pop = mean(mean_N_pop,na.rm=T),
             Ninterv = mean (Ninterv,na.rm=T)
             ) %>%
@@ -172,7 +183,7 @@ states_consumption <- dplyr::left_join(BR_states,
 # map
 # Remove plot axis
 no_axis <- theme(axis.title=element_blank(),
-                 axis.text=element_blank(),
+                 axis.text=element_text(size=6,angle=45),
                  axis.ticks=element_blank(),
                  strip.text.x = element_text(size = 8),
                  legend.position = "top", #c(0.85,0.2),

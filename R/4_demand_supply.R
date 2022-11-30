@@ -22,7 +22,8 @@ binded_data <- bind_cols (table_supply_state,
              summarise(across (ends_with("kg"), ~sum(.x,na.rm=T)),
                        mean_N_pop=sum(mean_N_pop,na.rm=T))
             )
-# per capital landing
+
+# per capita landing
 binded_data <- binded_data %>%
 
   mutate_each (funs(./mean_N_pop), ends_with("kg_1")) # landing of nutrients, per capita

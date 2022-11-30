@@ -316,7 +316,7 @@ write.xlsx (fisheries_wtrait, file = here ("output", "fisheries_wtrait.xlsx"))
 # and protein (%) in each EEZ.
 
 
-# function to transform
+# function to transform g into kg
 trans_qtd <- function (x) {x/0.1}
 
 
@@ -324,7 +324,7 @@ table_supply_state <- fisheries_wtrait %>%
   filter (Year %in% seq (2000,2015,1)) %>% # choose a year
   mutate (across (ends_with("mu"),list(kg = trans_qtd)),
           CatchAmount_kg = CatchAmount_t*1000) %>% # catch into kg
-  mutate_each(funs(.*CatchAmount_kg), ends_with("kg")) %>% # summarize by spate
+  mutate_each(funs(.*CatchAmount_kg), ends_with("kg")) %>% # summarize by state
   group_by (OtherArea) %>% # group and 
   summarise(across (ends_with("kg"), list(~mean(.x,na.rm=T))))  # summarize per state
 
@@ -635,7 +635,7 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
     ordination_nut<-ggplot(data=pcoa_nut,
                            aes(x=Axis.1,y=Axis.2)) + 
       geom_point(colour="black",alpha=0.5,stroke=1.5,
-                 shape=1,size=3) + # add the point markers
+                 shape=1,size=1.5) + # add the point markers
       
       #geom_text_repel(aes(label=sp ),size=3,
       #                vjust=1,
@@ -714,7 +714,7 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
 
 # arrange and save
   
-pdf (here ("output", "nutrients"),height=7,width=11)
+pdf (here ("output", "nutrients"),height=10,width=15)
 
 composition2<-grid.arrange(ordination_nut[[1]]+ggtitle ("North"),
                            ordination_nut[[2]]+ggtitle ("Northeast"),
@@ -811,7 +811,7 @@ mc_spp <- ggplot (nutrients_to_plot,aes (y=reorder(abb_name,Average),
   geom_errorbar(aes(xmin=Lower,xmax=Upper),width=0.15)+
   facet_wrap(~Nutrient,scales = "free_x",ncol=6)+
   theme_bw() +
-  theme(axis.text=element_text(size=8),
+  theme(axis.text.y=element_text(size=10),
         axis.title.x = element_text(size=10),
         panel.background = element_rect(fill = "lightyellow",
                                         colour = "gray",
@@ -895,10 +895,10 @@ plot2<- ggplot (taxon_nutrient,aes(x=value,
     geom_point()+
     facet_wrap(~name ,scales = "free_x",ncol=6)+
   theme_bw() +
-  theme(axis.text=element_text(size=8),
+  theme(axis.text.y=element_text(size=10),
         axis.title.x = element_text(size=10),
         axis.title.y = element_text(size=0),
-        
+        strip.text.x = element_blank(),
         panel.background = element_rect(fill = "lightcyan",
                                         colour = "gray",
                                         size = 0.5, 

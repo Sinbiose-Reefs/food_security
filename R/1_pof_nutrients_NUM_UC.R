@@ -352,7 +352,7 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
                                "cephalopod" = "Seafood" ,
                                "Ifish" = "Imported fish",
                                "FWfish" = "Freshwater fish",
-                               "wildmeat" = "Wildmeat",
+                               "wildmeat" = "Game",
                                "pork" = "Pork"
                                
   )) %>% 
