@@ -463,16 +463,16 @@ fish_year_nutrition$nutrient <- sapply (strsplit ( rownames(fish_year_nutrition)
 # melt to fit ggplot format
 require(reshape)
 fish_year_nutrition<- melt(fish_year_nutrition,id.var=c("year", "nutrient"))
-
+colnames(fish_year_nutrition)[which(colnames(fish_year_nutrition) == "variable")] <- "Region"
 
 # plot 
 require(ggplot2)
 plot_nut <- ggplot (fish_year_nutrition, aes (x=year, 
                                               y=value,
-                                              group=variable,
-                                              colour=variable)) + 
+                                              group=Region,
+                                              colour=Region)) + 
   geom_point(alpha=0.2)+
-  facet_wrap(~nutrient,scales = "free_y",ncol=7)+
+  facet_wrap(~nutrient,scales = "free_y",ncol=3)+
   geom_smooth(method = "gam",
               formula = y ~ s(x, bs = "cs",k=4))+
   scale_x_discrete(
@@ -481,7 +481,7 @@ plot_nut <- ggplot (fish_year_nutrition, aes (x=year,
                  max(fish_year_nutrition$year), by = 20),
     
   ) + 
-  ylab ("Content of nutrients") + 
+  ylab ("Content of nutrients (unit per 100 g protein)") + 
   xlab("Year")+
   theme_classic() + 
   theme(axis.text = element_text(size=8),
@@ -495,8 +495,7 @@ plot_nut <- ggplot (fish_year_nutrition, aes (x=year,
         ),
         legend.position = "top",
         legend.direction = "horizontal") + 
-  scale_fill_distiller(palette = "Spectral",
-                       name = "Region")
+  scale_fill_distiller(palette = "Spectral") 
 
 
 plot_nut
@@ -651,8 +650,8 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
       theme(legend.position = "none") + 
       xlab (paste ("Axis 1 (", round(Exp_axis1,2), "%)",sep="")) +
       ylab (paste ("Axis 2 (", round(Exp_axis2,2), "%)",sep=""))+
-      xlim (c(min(pcoa_nut$Axis.1)-2,max(pcoa_nut$Axis.1)+2)) + 
-      ylim (c(min(pcoa_nut$Axis.2)-2,max(pcoa_nut$Axis.2)+2)) 
+      xlim (c(-6,5))+#(c(min(pcoa_nut$Axis.1)-2,max(pcoa_nut$Axis.1)+2)) + 
+      ylim (c(-4,4))#(c(min(pcoa_nut$Axis.2)-2,max(pcoa_nut$Axis.2)+2)) 
     
     
     
@@ -714,25 +713,36 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
 
 # arrange and save
   
-pdf (here ("output", "nutrients"),height=10,width=15)
+
+
+
+
+pdf (here ("output", "nutrients_composition"),height=6,width=6)
 
 composition2<-grid.arrange(ordination_nut[[1]]+ggtitle ("North"),
                            ordination_nut[[2]]+ggtitle ("Northeast"),
                            ordination_nut[[3]]+ggtitle ("Southeast"),
                            ordination_nut[[4]]+ggtitle ("South"),
-                           plot_nut,
-                           ncol=4,nrow=7,
+                           ncol=4,nrow=4,
                            layout_matrix = rbind (c (1,1,2,2),
                                                   c (1,1,2,2),
                                                   c (3,3,4,4),
-                                                  c (3,3,4,4),
-                                                  c (5,5,5,5),
-                                                  c (5,5,5,5),
-                                                  c (5,5,5,5)))
+                                                  c (3,3,4,4)))
 
 
 
 dev.off()
+
+# nutrient over time
+
+
+
+pdf (here ("output", "nutrients_time.pdf"),height=6,width=6)
+
+plot_nut
+
+dev.off()
+
 
 
 
