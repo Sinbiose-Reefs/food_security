@@ -371,10 +371,11 @@ no_axis <- theme(axis.title=element_blank(),
                  panel.background = element_rect(fill = "white",
                                                  colour = "gray",
                                                  size = 0.5, linetype = "solid"),
-                 panel.grid.major = element_line(size = 0.5, linetype = 'solid',
-                                                 colour = "gray80"), 
-                 panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
-                                                 colour = "gray80"))
+                 panel.grid.major = element_blank(),#element_line(size = 0.5, linetype = 'solid',
+                                                 #colour = "gray80"), 
+                 panel.grid.minor = element_blank() #element_line(size = 0.25, linetype = 'solid',
+                                                 #colour = "gray80")
+)
 
 
 # total consumption
@@ -408,11 +409,9 @@ p1 <- ggplot(data = total_consumption_data) +
                                   max(states_consumption$QTD,na.rm=T)),
                        breaks = round (seq(min(states_consumption$QTD,na.rm=T),
                                     max(states_consumption$QTD,na.rm=T),
-                                    26),1)) +
+                                    3),1)) +
   no_axis+
-  facet_wrap(~income_cat,scales="fixed",ncol=5) + 
-  theme(legend.position = "right",
-        legend.direction = "vertical")  
+  facet_wrap(~income_cat,scales="fixed",ncol=5)   
   
 p1
 
@@ -444,7 +443,7 @@ data_pie <- data.frame (
 
 p2<-ggplot() + geom_scatterpie(aes(x=lon, y=lat, 
                                    group=name_state,
-                                   r = 1), 
+                                   r = 1.5), 
                                data=data_pie,
                            cols=c("Calcium_kg",
                                   "Iron_kg",
