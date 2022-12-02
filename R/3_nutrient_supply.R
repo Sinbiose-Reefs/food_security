@@ -345,6 +345,33 @@ fisheries_wtrait %>%
 
 
 
+# nutrient availability per state 
+
+p_state_consumption <- fisheries_wtrait %>% 
+  filter (Year %in% seq (2000,2015,1)) %>% # choose a year
+  mutate (across (ends_with("mu"),list(kg = trans_qtd)),
+          CatchAmount_kg = CatchAmount_t*1000) %>% # catch into kg
+  mutate_each(funs(.*CatchAmount_kg), ends_with("kg")) %>% 
+  select(starts_with("Other") | ends_with("kg") | starts_with("Region")) %>%
+  mutate(OtherArea = fct_reorder(OtherArea, CatchAmount_kg)) %>%
+  select (!c("CatchAmount_kg", "Protein_mu_kg")) %>%
+  
+  gather ("nutrient", "value", -OtherArea,-Region) %>%
+  ggplot (aes (x =  (OtherArea), 
+               y=log(value)))+
+  geom_boxplot(aes (fill=Region)) + 
+  theme_bw()+
+  facet_wrap(~nutrient,
+               scales = "fixed",ncol=3) + 
+  theme(axis.text.x = element_text(angle=90)) + 
+  ylab ("Nutrient landings (log kg / year)") + 
+  xlab ("State") 
+
+
+ggsave(p_state_consumption, file=here ('output',"state_consumption.pdf"), 
+       width=10, height=8,bg="white")
+
+
 
 # ==============================================================
 
@@ -506,8 +533,6 @@ plot_nut
 # -----------------------------------------------------------------------
 
 # ordination to show the nutrition content of fish genus
-
-
 # find the 20 most catched spp in BR
 
 
@@ -519,9 +544,6 @@ names(most_catched_BR[order(most_catched_BR,decreasing=T)][1:20])
 
 
 # the 20 most catched in each region
-
-
-
 fish_genus_region <- tapply (fisheries_wtrait$CatchAmount_t,
                            list (fisheries_wtrait$TaxonName,
                                  fisheries_wtrait$Region

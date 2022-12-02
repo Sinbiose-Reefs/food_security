@@ -209,7 +209,7 @@ plot_vitA<-df_nut_data %>%
 # arrange
 
 
-pdf (here ("output", "demand_supply"),width=10,height=6)
+pdf (here ("output", "demand_supply.pdf"),width=10,height=6)
 
 grid.arrange(plot_all+ylab("Per capita kg/year"),
              plot_zinc+theme (axis.title = element_blank()),
