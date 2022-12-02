@@ -93,7 +93,7 @@ dev.off()
 
 # circular plot
 # https://r-graph-gallery.com/297-circular-barplot-with-groups.html
-
+# https://r-graph-gallery.com/299-circular-stacked-barplot.html
 
 
 # aggregate
@@ -160,7 +160,7 @@ p <- ggplot(dat_circular) +
            stat="identity", alpha=0.7) +
   scale_fill_brewer(palette = "Spectral",direction=1)+
   
-  # Add a val=100/75/50/25 lines. I do it at the beginning to make sur barplots are OVER it.
+  # Add a val=100/75/50/25 lines. I do it at the beginning to make sure barplots are OVER it.
   geom_segment(data=grid_data, aes(x = end, y = 0, xend = start, yend = 0), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
   geom_segment(data=grid_data, aes(x = end, y = 20, xend = start, yend = 20), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
   geom_segment(data=grid_data, aes(x = end, y = 40, xend = start, yend = 40), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
@@ -175,7 +175,7 @@ p <- ggplot(dat_circular) +
                     label = c("0", "20", "40", "60", "80","100") , 
                     color="grey", size=3 , angle=0, fontface="bold", hjust=1) +
   
-  ylim(-50,max(label_data$tot, na.rm=T)) +
+  ylim(-150,max(label_data$tot, na.rm=T)) +
   theme_minimal() +
   theme(
     legend.position = "right",
@@ -189,7 +189,7 @@ p <- ggplot(dat_circular) +
   coord_polar() +
   
   # Add labels on top of each bar
-  geom_text(data=label_data, aes(x=id, y=tot+2, 
+  geom_text(data=label_data, aes(x=id, y=tot-80, 
                                  label=income_cat, hjust=hjust), 
             color="black", fontface="bold",alpha=0.6, size=2, 
             angle= label_data$angle, inherit.aes = FALSE ) +
@@ -197,9 +197,10 @@ p <- ggplot(dat_circular) +
   # Add base line information
  geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5,
                                   colour = region), 
-               alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
+               alpha=0.8, size=1.5 , inherit.aes = FALSE )  +
   scale_colour_brewer(palette = "Spectral",direction=1)+
   geom_text(data=base_data, aes(x = title, y = -18, label=region), hjust=c(1,1,0,0), colour = "black", alpha=0.8, size=3, fontface="bold", inherit.aes = FALSE)
+
 
 
 p
@@ -212,7 +213,9 @@ p
 # 2 - daily consumption
 # filter the food
 filter_interesting_food <- CONSUMO_ALIMENTAR %>% 
-  filter (sea_food == 1  )  # seafood
+  mutate (Ndays=n_distinct(DIA_SEMANA)) %>%
+  filter (sea_food == 1  & single_PTN == 1) # seafood & only raw protein
+   
 
 
 
@@ -224,9 +227,14 @@ fun_kg_year <- function (x) {(x/1000)*365}
 # filter the days
 consumption_nutrients <- filter_interesting_food %>%
   arrange(state)%>% # ordering states
-  filter (position == "sea") %>% # coastal states
+  #filter (position == "sea") %>% # coastal states
   group_by(state,income_cat,unit_analysis) %>% # group by interviewer
-  select (state,income_cat,unit_analysis,DIA_SEMANA,N_pop_class, 
+  select (state,
+          income_cat,
+          unit_analysis,
+          DIA_SEMANA,
+          N_pop_class, 
+          Ndays,
           QTD, 
           Calcium, 
           Iron, 
@@ -234,15 +242,14 @@ consumption_nutrients <- filter_interesting_food %>%
           `Vitamin-A`, 
           `Polyunsatured fat`,
           Magnesium) %>% # select  variables (nutrients) to test
-  #mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
+  # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
   group_by(state,income_cat,unit_analysis) %>%  # summarize by person
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
             mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
-            Ninterv = n_distinct(unit_analysis)) %>% #, # N interviewers
-            #Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
-  #group_by(state,income_cat,unit_analysis) %>%
-  #summarise( sum_nut = mean( sum_nut,na.rm=T)) %>% #, # the average across the N days
-             #Ndays=sum(Ndays,na.rm=T)) %>%
+            Ninterv = n_distinct(unit_analysis),
+            Ndays = mean(Ndays)) %>% #, # N interviewers
+            # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
+  mutate_at(vars (QTD:Magnesium), funs(. / Ndays)) %>% 
   mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
           mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
           Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
@@ -269,6 +276,9 @@ consumption_nutrients <- filter_interesting_food %>%
   #mutate_each (funs(./Ninterv), ends_with("kg"))  # per capita consumption
   
   
+
+
+
   
 
 # save
@@ -286,18 +296,26 @@ BR_states <- read_state()
   
 
 # join the databases
-states_consumption <- dplyr::left_join(BR_states, 
+states_consumption <- dplyr::left_join(BR_states %>% 
+                                         mutate(name_region = recode(name_region, "Norte" = "North",
+                                                                   "Sul" = "South",
+                                                                   "Sudeste" = "Southeast",
+                                                                   "Nordeste" ="Northeast")), 
                                        consumption_nutrients, 
                                        by = c("name_state" = "state_adj"))
 
 # br map
 map_BR <- ggplot(data = states_consumption %>%
                    filter (is.na(mean_N_pop ) != T)) +
-  geom_sf(aes(fill=name_region),
-          colour="black",#NA 
-          size=.15) + 
+  geom_sf(aes(fill=QTD_kg),
+          colour="black",
+          size=0.5) + 
   theme_classic() +
-  theme (legend.position = "none",
+  theme (legend.position = c(0.12,0.42),
+         legend.direction = "vertical",
+         legend.key.size = unit(1,"cm"),
+         legend.text = element_text(size=8),
+         legend.title = element_text(size=10),
          axis.text = element_blank(),
          axis.line = element_blank(),
          axis.ticks = element_blank(),
@@ -307,10 +325,15 @@ map_BR <- ggplot(data = states_consumption %>%
          panel.grid.minor = element_blank(), # get rid of minor grid
          plot.background = element_rect(fill = "transparent",
                                         colour = NA_character_), # necessary to avoid drawing plot outline
-         legend.background = element_rect(fill = "transparent"),
-         legend.box.background = element_rect(fill = "transparent"),
-         legend.key = element_rect(fill = "transparent"))+
-  scale_fill_brewer(palette = "Spectral")
+         legend.background = element_blank(),# element_rect(fill = "transparent"),
+         #legend.box.background = element_rect(fill = "transparent"),
+         #legend.key = element_rect(fill = "transparent")
+         )+
+  scale_fill_gradient(low = "white", high = "black") + 
+  guides(fill=guide_legend(title=("Seafood\nconsumption\n(kg)")))
+  
+
+map_BR
 
 # arrange map and circular plot
 
@@ -319,7 +342,7 @@ map_ccplot <- grid.arrange(p,
              ncol=5,nrow=8,
              layout_matrix = rbind (c(1,1,1,1,1),
                                     c(1,1,1,1,1),
-                                    c(1,1,1,1,1),
+                                    c(1,2,2,2,1),
                                     c(1,2,2,2,1),
                                     c(1,2,2,2,1),
                                     c(1,1,1,1,1),
@@ -327,7 +350,9 @@ map_ccplot <- grid.arrange(p,
                                     c(1,1,1,1,1)))
 
 #save
-ggsave(map_ccplot, file=here ('output',"output.pdf"), 
+ggsave(map_BR, file=here ('output',"map_consumption.pdf"), 
+       width=10, height=10,bg="white")
+ggsave(p, file=here ('output',"circular_plot.pdf"), 
        width=10, height=10,bg="white")
 
 
@@ -386,8 +411,8 @@ p1 <- ggplot(data = total_consumption_data) +
                                     26),1)) +
   no_axis+
   facet_wrap(~income_cat,scales="fixed",ncol=5) + 
-  theme(legend.position = "top",
-        legend.direction = "horizontal")  
+  theme(legend.position = "right",
+        legend.direction = "vertical")  
   
 p1
 
@@ -444,6 +469,8 @@ p2<-ggplot() + geom_scatterpie(aes(x=lon, y=lat,
 
 p2
 
+
+# save
 pdf (here ("output", "Map_nutrients"),width=10,height=9)
 
 # arrange maps

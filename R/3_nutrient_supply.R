@@ -319,7 +319,7 @@ write.xlsx (fisheries_wtrait, file = here ("output", "fisheries_wtrait.xlsx"))
 # function to transform g into kg
 trans_qtd <- function (x) {x/0.1}
 
-
+# calculate the supply
 table_supply_state <- fisheries_wtrait %>% 
   filter (Year %in% seq (2000,2015,1)) %>% # choose a year
   mutate (across (ends_with("mu"),list(kg = trans_qtd)),
@@ -327,6 +327,7 @@ table_supply_state <- fisheries_wtrait %>%
   mutate_each(funs(.*CatchAmount_kg), ends_with("kg")) %>% # summarize by state
   group_by (OtherArea) %>% # group and 
   summarise(across (ends_with("kg"), list(~mean(.x,na.rm=T))))  # summarize per state
+
 
 # save
 save (table_supply_state, file = here ("output", "table_supply_state.RData"))

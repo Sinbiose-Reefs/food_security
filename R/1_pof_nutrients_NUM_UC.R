@@ -145,6 +145,9 @@ CONSUMO_ALIMENTAR$protein_type <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
                                                    Documentacao$CÓDIGO.DO.ALIMENTO),"protein_type"]
 CONSUMO_ALIMENTAR$sea_food <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
                                                       Documentacao$CÓDIGO.DO.ALIMENTO),"Seafood"]
+CONSUMO_ALIMENTAR$single_PTN <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
+                                                  Documentacao$CÓDIGO.DO.ALIMENTO),"single_PTN"]
+
 
 
 # BIND INCOME
@@ -363,7 +366,8 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
                 "Zinc" = ZINCO,
                 "Vitamin-A" = VITA_RAE,
                 "Magnesium" = MAGNESIO) %>% 
-  filter (position == "sea" & general_type != "DD")
+  filter (position == "sea" & 
+            general_type != "DD")
 
 
 
