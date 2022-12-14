@@ -66,6 +66,7 @@ fisheries$epithet <- ifelse (fisheries$genus == fisheries$epithet,
 #require(worrms)
 #
 fisheries$TaxonName <- gsub ("_", " ", fisheries$TaxonName)
+
 ## search
 #worms_record_fish <- lapply (unique(fisheries$TaxonName), function (i) 
 #  
@@ -176,7 +177,8 @@ colnames(TBCA_nutrients) <- c("scientificName", "protein_type", "Protein_mu", "Z
                               "Iron_mu", "Vitamin_A_RE","Vitamin_A_mu", "Omega_3_mu",  "Seafood")
 
 # numeric
-TBCA_nutrients <- TBCA_nutrients %>% mutate(Protein_mu = as.numeric(Protein_mu),
+TBCA_nutrients <- TBCA_nutrients %>% 
+                   mutate(Protein_mu = as.numeric(Protein_mu),
                           Zinc_mu = as.numeric(Zinc_mu),
                           Selenium_mu = as.numeric(Selenium_mu),
                           Calcium_mu = as.numeric(Calcium_mu),
@@ -399,12 +401,6 @@ omega_genus <- tapply (fisheries_wtrait$Omega_3_mu,
                              fisheries_wtrait$Region),
                        mean,na.rm=T)
 
-# protein
-#protein_genus <- tapply (fisheries_wtrait$Protein_mu,
-#                      list (fisheries_wtrait$Genus_match,
-#                            fisheries_wtrait$Region),
-#                      mean,na.rm=T)
-
 # calcium
 calcium_genus <- tapply (fisheries_wtrait$Calcium_mu,
                          list (fisheries_wtrait$TaxonName,
@@ -425,20 +421,11 @@ vitA_genus <- tapply (fisheries_wtrait$Vitamin_A_mu,
 
 # list of nutrient data
 nutrient_data <- list (zinc_genus,iron_genus,omega_genus,
-                       #protein_genus,
                        calcium_genus,selenium_genus , vitA_genus)
 
 
-# match with catch amount data
-#nutrient_data <- lapply (nutrient_data, function (i)
-#  
-#  i <- cbind (i, amount = catch_year_genus [match (rownames(i), 
-#                           catch_year_genus$Genus_match), 
-#                    "sum_catch"])
-#  
-#)
 
-
+# most often harvested taxa
 nsp_choose <- 20
 
 
@@ -740,7 +727,7 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
 
 
 
-pdf (here ("output", "nutrients_composition"),height=6,width=6)
+pdf (here ("output", "nutrients_composition.pdf"),height=6,width=6)
 
 composition2<-grid.arrange(ordination_nut[[1]]+ggtitle ("North"),
                            ordination_nut[[2]]+ggtitle ("Northeast"),
@@ -951,7 +938,7 @@ plot2<- ggplot (taxon_nutrient,aes(x=value,
 
 
 # arrange
-pdf(here ("output", "Nutrients_supply_consumed"),width=10,height=8)
+pdf(here ("output", "Nutrients_supply_consumed.pdf"),width=10,height=8)
 gridExtra::grid.arrange(mc_spp,
              plot2,
              nrow=5,

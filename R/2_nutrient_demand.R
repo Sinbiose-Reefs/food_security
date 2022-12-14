@@ -28,7 +28,7 @@ load (here ("output",
 # 1 - proportion
 
 foodType_ind <- dcast (data = CONSUMO_ALIMENTAR, 
-       formula = unit_analysis+income_cat+region~general_type,
+       formula = COD_INFOR+income_cat+region~general_type,
        value.var= "QTD",
        fun.aggregate = sum,
        na.rm=T,
@@ -59,7 +59,6 @@ foodType_ind %>%
   summarise(across (Beef:Seafood,~ mean(.x, na.rm = TRUE))) %>% 
   gather ("food_type", "proportion", -income_cat,-region) %>%
   mutate(food_type = factor(food_type, levels = c("Beef", 
-                                                 "Beef&other",
                                                  "Game",
                                                  "Goat",
                                                  "Pork",
@@ -104,7 +103,6 @@ dat_circular <- foodType_ind %>%
   summarise(across (Beef:Seafood,~ mean(.x, na.rm = TRUE))) %>% 
   gather ("food_type", "proportion", -income_cat,-region) %>%
   mutate(food_type = factor(food_type, levels = c("Beef", 
-                                                  "Beef&other",
                                                   "Game",
                                                   "Goat",
                                                   "Pork",
@@ -228,10 +226,10 @@ fun_kg_year <- function (x) {(x/1000)*365}
 consumption_nutrients <- filter_interesting_food %>%
   arrange(state)%>% # ordering states
   #filter (position == "sea") %>% # coastal states
-  group_by(state,income_cat,unit_analysis) %>% # group by interviewer
+  group_by(state,income_cat,COD_INFOR) %>% # group by interviewer
   select (state,
           income_cat,
-          unit_analysis,
+          COD_INFOR,
           DIA_SEMANA,
           N_pop_class, 
           Ndays,
@@ -240,13 +238,13 @@ consumption_nutrients <- filter_interesting_food %>%
           Iron, 
           Zinc, 
           `Vitamin-A`, 
-          `Polyunsatured fat`,
+          Omega3,
           Magnesium) %>% # select  variables (nutrients) to test
   # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
-  group_by(state,income_cat,unit_analysis) %>%  # summarize by person
+  group_by(state,income_cat,COD_INFOR) %>%  # summarize by person
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
             mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
-            Ninterv = n_distinct(unit_analysis),
+            Ninterv = n_distinct(COD_INFOR),
             Ndays = mean(Ndays)) %>% #, # N interviewers
             # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
   mutate_at(vars (QTD:Magnesium), funs(. / Ndays)) %>% 
@@ -263,13 +261,13 @@ consumption_nutrients <- filter_interesting_food %>%
               "Iron_kg",
               "Zinc_kg",
               "Vitamin-A_kg",
-              "Polyunsatured fat_kg",
+              "Omega3_kg",
               "Magnesium_kg"), ~replace_na(.,0)) %>%
   mutate(state_adj = recode(state, "Mato Grosso do Sul" = "Mato Grosso Do Sul",
                             "Rio de Janeiro" = "Rio De Janeiro",
                             "Rio Grande do Norte" = "Rio Grande Do Norte",
                             "Espírito Santo" ="Espirito Santo"),
-         sum_consumpt = Calcium_kg +Iron_kg+Zinc_kg+ `Vitamin-A_kg`+ `Polyunsatured fat_kg`
+         sum_consumpt = Calcium_kg +Iron_kg+Zinc_kg+ `Vitamin-A_kg`+ Omega3_kg
          ) #%>%
   #mutate (kg_consumed = mean_year_cons_kg*mean_N_pop) %>%
   #mutate_each (funs(.*mean_N_pop), ends_with("kg"))  %>% # extrapolate to all people
@@ -426,7 +424,7 @@ data_pie <- data.frame (
               Iron_kg,
               Zinc_kg,
               `Vitamin-A_kg`,
-              `Polyunsatured fat_kg`,
+              Omega3_kg,
               Magnesium_kg,
               lat,
               lon))%>%
@@ -435,7 +433,7 @@ data_pie <- data.frame (
               "Iron_kg",
               "Zinc_kg",
               "Vitamin.A_kg",
-              "Polyunsatured.fat_kg",
+              "Omega3_kg",
               "Magnesium_kg"), ~replace_na(.,0))
 
 # plot
@@ -449,7 +447,7 @@ p2<-ggplot() + geom_scatterpie(aes(x=lon, y=lat,
                                   "Iron_kg",
                                   "Zinc_kg",
                                   "Vitamin.A_kg",
-                                  "Polyunsatured.fat_kg",
+                                  "Omega3_kg",
                                   "Magnesium_kg"),
                            color=NA) + 
   coord_equal()+

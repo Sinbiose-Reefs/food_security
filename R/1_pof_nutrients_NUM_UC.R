@@ -38,7 +38,7 @@ require(reshape)
 
 
 ## create an identified to each unit
-MORADOR$unit_analysis <- paste(MORADOR$UF,
+MORADOR$COD_INFOR  <- paste(MORADOR$UF,
                                MORADOR$ESTRATO_POF,
                                MORADOR$TIPO_SITUACAO_REG,
                                MORADOR$COD_UPA,
@@ -55,7 +55,7 @@ income_MORADOR <- MORADOR %>%
 
 
 # interviewees
-length(unique(MORADOR$unit_analysis ))
+length(unique(MORADOR$COD_INFOR  ))
 
 
 
@@ -101,7 +101,7 @@ length(unique(MORADOR$unit_analysis ))
 
 ## create an identified to each unit
 
-CONSUMO_ALIMENTAR$unit_analysis <- paste(CONSUMO_ALIMENTAR$UF,
+CONSUMO_ALIMENTAR$COD_INFOR  <- paste(CONSUMO_ALIMENTAR$UF,
                                          CONSUMO_ALIMENTAR$ESTRATO_POF,
                                          CONSUMO_ALIMENTAR$TIPO_SITUACAO_REG,
                                          CONSUMO_ALIMENTAR$COD_UPA,
@@ -113,16 +113,23 @@ CONSUMO_ALIMENTAR$unit_analysis <- paste(CONSUMO_ALIMENTAR$UF,
 
 # Number of interviewees
 
-length(unique(CONSUMO_ALIMENTAR$unit_analysis ))
+length(unique(CONSUMO_ALIMENTAR$COD_INFOR  ))
 
 
 #View(CONSUMO_ALIMENTAR[which(CONSUMO_ALIMENTAR$COD_UPA == "110000016"),])
-#table(CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$unit_analysis == CONSUMO_ALIMENTAR$unit_analysis[1]),"V9001"],
-#      CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$unit_analysis == CONSUMO_ALIMENTAR$unit_analysis[1]),"QUADRO"])
+#table(CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$COD_INFOR  == CONSUMO_ALIMENTAR$COD_INFOR [1]),"V9001"],
+#      CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$COD_INFOR  == CONSUMO_ALIMENTAR$COD_INFOR [1]),"QUADRO"])
 
 
+# load omega3 data to match
+
+omega3 <- read.csv (here ("POF_government", 
+                                 "Omega3_QTD.csv"),
+                     sep=",")
 
 
+# bind omega 3 in the consumption table
+CONSUMO_ALIMENTAR$Omega3 <- (omega3$O3 [match (CONSUMO_ALIMENTAR$COD_INFOR, omega3$COD_INFOR)])
 
 
 # Loading documentation -- food codes
@@ -152,8 +159,8 @@ CONSUMO_ALIMENTAR$single_PTN <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
 
 # BIND INCOME
 CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
-                                 MORADOR[match (CONSUMO_ALIMENTAR$unit_analysis,
-                                                MORADOR$unit_analysis),
+                                 MORADOR[match (CONSUMO_ALIMENTAR$COD_INFOR ,
+                                                MORADOR$COD_INFOR ),
                                           c("PC_RENDA_DISP","PC_RENDA_MONET", "COMPOSICAO","RENDA_TOTAL", "V0404", "V0405")])
 
 
@@ -360,7 +367,9 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
                                
   )) %>% 
   filter (DIA_ATIPICO == 2) %>% # remove atypical days (1=atypical)
-  dplyr::rename("Polyunsatured fat"= AGPOLI ,
+  filter (general_type != "Beef&other") %>%
+  # remove beef&other
+  dplyr::rename("Omega3"= Omega3 ,
                 "Calcium" = CALCIO,
                 "Iron" = FERRO,
                 "Zinc" = ZINCO,
@@ -371,22 +380,24 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
 
 
 
+
+
 # useful data to report in the paper
 # sex
-colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
-             CONSUMO_ALIMENTAR$Sex)>0)/length(unique(CONSUMO_ALIMENTAR$unit_analysis))
+colSums(table (CONSUMO_ALIMENTAR$COD_INFOR ,
+             CONSUMO_ALIMENTAR$Sex)>0)/length(unique(CONSUMO_ALIMENTAR$COD_INFOR ))
 # race
-round (colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
-               CONSUMO_ALIMENTAR$Race)>0)/length(unique(CONSUMO_ALIMENTAR$unit_analysis)),2)
+round (colSums(table (CONSUMO_ALIMENTAR$COD_INFOR ,
+               CONSUMO_ALIMENTAR$Race)>0)/length(unique(CONSUMO_ALIMENTAR$COD_INFOR )),2)
 # class
-round (colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
-               CONSUMO_ALIMENTAR$income_cat)>0)/length(unique(CONSUMO_ALIMENTAR$unit_analysis)),2)
+round (colSums(table (CONSUMO_ALIMENTAR$COD_INFOR ,
+               CONSUMO_ALIMENTAR$income_cat)>0)/length(unique(CONSUMO_ALIMENTAR$COD_INFOR )),2)
 
 # state
-dat_state<- data.frame (int=(colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
-                                CONSUMO_ALIMENTAR$state)>0))[order((colSums(table (CONSUMO_ALIMENTAR$unit_analysis,
+dat_state<- data.frame (int=(colSums(table (CONSUMO_ALIMENTAR$COD_INFOR ,
+                                CONSUMO_ALIMENTAR$state)>0))[order((colSums(table (CONSUMO_ALIMENTAR$COD_INFOR ,
                                                                                    CONSUMO_ALIMENTAR$state)>0)),decreasing=T)])
-dat_state$prop <- dat_state$int/length(unique(CONSUMO_ALIMENTAR$unit_analysis))
+dat_state$prop <- dat_state$int/length(unique(CONSUMO_ALIMENTAR$COD_INFOR ))
 (dat_state <- rbind (dat_state, 
        data.frame (int=sum(dat_state$int),
                     prop=sum(dat_state$prop))
@@ -399,7 +410,7 @@ save (CONSUMO_ALIMENTAR, file = here ("output",
 
 
 # end data organization
-rm(list=ls())
+#rm(list=ls())
 
 
 

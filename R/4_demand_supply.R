@@ -33,6 +33,7 @@ binded_data <- binded_data %>%
 #colnames(binded_data) <- gsub ("FERRO", "Iron", colnames(binded_data))
 #colnames(binded_data) <- gsub ("AGPOLI", "Omega_3", colnames(binded_data))
 colnames(binded_data) <- gsub ("QTD_kg", "Catch_QTD_kg", colnames(binded_data))
+colnames(binded_data) <- gsub ("Omega3_kg", "Omega-3_kg", colnames(binded_data))
 
 # analyze the difference
 df_nut_data <- binded_data %>%
@@ -41,7 +42,7 @@ df_nut_data <- binded_data %>%
           supply_higher_demand_iron = Iron_mu_kg_1 > Iron_kg,
           supply_higher_demand_calcium = Calcium_mu_kg_1 > Calcium_kg,
           supply_higher_demand_vitaA = Vitamin_A_mu_kg_1 > `Vitamin-A_kg`,
-          supply_higher_demand_omega3 = Omega_3_mu_kg_1 > `Polyunsatured fat_kg`) %>%
+          supply_higher_demand_omega3 = Omega_3_mu_kg_1 > `Omega-3_kg`) %>%
   mutate_if(is.logical, as.character) %>%
   mutate(supply_higher_demand_catch = recode(supply_higher_demand_catch, "TRUE" = "S>D",
                                        "FALSE" = "S<D"),
@@ -62,7 +63,7 @@ df_nut_data <- binded_data %>%
 
 
 # plot settings
-def_max.overlaps<-20
+def_max.overlaps<-30
 my_theme<- theme(legend.position = "none",
                 axis.title.x = element_blank(),
                 axis.text.x = element_text(size=8, 
@@ -215,10 +216,10 @@ grid.arrange(plot_all+ylab("Per capita kg/year"),
              plot_zinc+theme (axis.title = element_blank()),
              plot_calcium+theme (axis.title = element_blank()),
              plot_iron+theme (axis.title = element_blank()),
-             #plot_omega3,
+             plot_omega3+theme (axis.title = element_blank()),
              plot_vitA+theme (axis.title = element_blank()),
              layout_matrix = rbind (c (1,2,3),
-                                    c(1,4,5)))
+                                    c(4,5,6)))
 
 dev.off()
 
