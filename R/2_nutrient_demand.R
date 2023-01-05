@@ -399,9 +399,9 @@ p1 <- ggplot(data = total_consumption_data) +
           size=.15) +
   labs(subtitle="Total seafood consumption, Brazilian coastal states, 2017-2018", 
        size=8) +
-  scale_fill_distiller(palette = "Spectral", 
+  scale_fill_distiller(palette = "Greys", 
                        name="(kg/year)", 
-                       na.value = "gray80",
+                       na.value = "red",
                        direction=-1,
                        limits = c(min(states_consumption$QTD,na.rm=T),
                                   max(states_consumption$QTD,na.rm=T)),
