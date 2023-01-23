@@ -49,7 +49,7 @@ foodType_ind[,sel_cols]<-foodType_ind[,sel_cols]/foodType_ind[,"(all)"]
 #foodType_ind[is.na(foodType_ind)] <- 0
 
 
-pdf (here ("output", "barplot_consumption"),width=4,height=7)
+pdf (here ("output", "barplot_consumption.pdf"),width=4,height=7)
 
 # aggregate
 foodType_ind %>%
@@ -234,6 +234,7 @@ consumption_nutrients <- filter_interesting_food %>%
           N_pop_class, 
           Ndays,
           QTD, 
+          PTN,
           Calcium, 
           Iron, 
           Zinc, 
@@ -245,14 +246,14 @@ consumption_nutrients <- filter_interesting_food %>%
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
             mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
             Ninterv = n_distinct(COD_INFOR),
-            Ndays = mean(Ndays)) %>% #, # N interviewers
+            Ndays = mean(Ndays)) %>% #, # N interview days
             # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
   mutate_at(vars (QTD:Magnesium), funs(. / Ndays)) %>% 
   mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
           mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
           Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
   group_by(state,income_cat) %>% # further group by state and class (summarize individual consumption)
-  summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)) , # per capita consumption (mean across interviewees)
+  summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)) , # per capita consumption in kg (mean across interviewees)
             mean_N_pop = mean(mean_N_pop,na.rm=T),
             Ninterv = mean (Ninterv,na.rm=T)
             ) %>%
@@ -262,7 +263,7 @@ consumption_nutrients <- filter_interesting_food %>%
               "Zinc_kg",
               "Vitamin-A_kg",
               "Omega3_kg",
-              "Magnesium_kg"), ~replace_na(.,0)) %>%
+              "Magnesium_kg"), ~replace_na(.,NA)) %>% # replace_na(.,0)
   mutate(state_adj = recode(state, "Mato Grosso do Sul" = "Mato Grosso Do Sul",
                             "Rio de Janeiro" = "Rio De Janeiro",
                             "Rio Grande do Norte" = "Rio Grande Do Norte",
@@ -275,9 +276,6 @@ consumption_nutrients <- filter_interesting_food %>%
   
   
 
-
-
-  
 
 # save
 save (consumption_nutrients, file = here ("output", "consumption_nutrients.RData"))
@@ -476,6 +474,8 @@ grid.arrange(p1+theme(plot.subtitle =  element_blank()),p2,
 
 
 dev.off()
+
+# end
 
 
 rm(list=ls())
