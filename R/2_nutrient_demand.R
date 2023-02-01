@@ -25,6 +25,8 @@ load (here ("output",
             "fishConsumption_Income.RData"))
 
 
+
+
 # 1 - proportion
 
 foodType_ind <- dcast (data = CONSUMO_ALIMENTAR, 
@@ -203,6 +205,76 @@ p <- ggplot(dat_circular) +
 
 p
 
+
+
+
+# ------------------------------------------------------
+
+# only blue food
+
+foodType_ind <- dcast (data = CONSUMO_ALIMENTAR %>% 
+                         
+                         filter (bluefood == "Bluefood" &
+                                   
+                                 protein_type %in% c("SWfish/crustacean",
+                                                     "SWfish/cephalopod/crustacean/mollusk",
+                                                     "cephalopod/crustacean/mollusk") ==F  
+                                   ), 
+                       formula = COD_INFOR+income_cat+region~protein_type,
+                       value.var= "QTD",
+                       fun.aggregate = sum,
+                       na.rm=T,
+                       fill=0,
+                       margins = "protein_type",
+                       drop=F)
+
+
+
+# proportion (NAs are produced because each individual only belongs to one social class)
+sel_cols <- colnames(foodType_ind)[seq (which(colnames(foodType_ind) == "cephalopod") , 
+                                        which(colnames(foodType_ind) == "SWfish"),
+                                        1)]
+
+
+# proportion
+foodType_ind[,sel_cols]<-foodType_ind[,sel_cols]/foodType_ind[,"(all)"]
+# 0/0 = NaN
+#foodType_ind[is.na(foodType_ind)] <- 0
+
+
+
+# aggregate
+agg_foodType_ind <- foodType_ind %>%
+  select (-`(all)`) %>%
+  #filter (is.na(Beef) !=T) %>%
+  group_by() %>%#
+  summarise(across (cephalopod:SWfish,~ mean(.x, na.rm = TRUE))) %>% 
+  gather ("food_type", "proportion")
+
+pdf (here ("output", "agg_foodType_ind.pdf"),width=5,height=6)  
+ggplot (data = agg_foodType_ind,
+          aes (fill=food_type, 
+               x=1,#x=(income_cat),
+               y=proportion[order(proportion)]))+
+  geom_bar (position="stack", stat="identity") +
+  #coord_polar(theta = "y")+
+  #scale_fill_viridis_d()+
+  scale_fill_brewer(palette = "Spectral",direction=-1)+
+  #facet_wrap(~region,nrow=2,ncol=2)+
+  theme(axis.text.x = element_text(angle=90),
+        panel.background = element_rect(fill = "white",
+                                        colour = "gray",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.caption =  element_text(size=8))+
+  xlab ("Income class")+
+  ylab ("Average proportion in the daily diet")+
+  labs (caption = "Source of data: Brazilian Institute of Geography and Statistics (POF, 2018)") +
+  guides(fill=guide_legend(title="Protein type"))
+
+dev.off()
+
+
 # ----------------------------------------------------
 
 
@@ -276,10 +348,85 @@ consumption_nutrients <- filter_interesting_food %>%
   
   
 
+# statistics per state
+
+consumption_nutrients %>%
+  group_by(state)  %>% 
+  summarise(mean(QTD_kg,na.rm=T), 
+            sd (QTD_kg,na.rm=T))
+
 
 # save
 save (consumption_nutrients, file = here ("output", "consumption_nutrients.RData"))
 
+
+
+# -------------------------------------------------------------------------
+
+
+# summaries per state
+
+
+# filter the days
+consumption_nutrients <- filter_interesting_food %>%
+  arrange(state)%>% # ordering states
+  #filter (position == "sea") %>% # coastal states
+  group_by(region,state,income_cat,COD_INFOR) %>% # group by interviewer
+  select (region,
+          state,
+          income_cat,
+          COD_INFOR,
+          DIA_SEMANA,
+          N_pop_class, 
+          Ndays,
+          QTD, 
+          PTN,
+          Calcium, 
+          Iron, 
+          Zinc, 
+          `Vitamin-A`, 
+          Omega3,
+          Magnesium) %>% # select  variables (nutrients) to test
+  # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
+  group_by(region,state,income_cat,COD_INFOR) %>%  # summarize by person
+  summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
+            mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
+            Ninterv = n_distinct(COD_INFOR),
+            Ndays = mean(Ndays)) %>% #, # N interview days
+  # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
+  mutate_at(vars (QTD:Magnesium), funs(. / Ndays)) %>% 
+  mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
+          mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
+          Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
+  group_by(region,state) %>% # further group by state and class (summarize individual consumption)
+  summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)),
+            # per capita consumption in kg (mean across interviewees)
+            mean_N_pop = mean(mean_N_pop,na.rm=T),
+            Ninterv = mean (Ninterv,na.rm=T)
+  ) %>%
+  #complete(income_cat) %>% # keep all levels
+  mutate_at(c("Calcium_kg",
+              "Iron_kg",
+              "Zinc_kg",
+              "Vitamin-A_kg",
+              "Omega3_kg",
+              "Magnesium_kg"), ~replace_na(.,NA)) %>% # replace_na(.,0)
+  mutate(state_adj = recode(state, "Mato Grosso do Sul" = "Mato Grosso Do Sul",
+                            "Rio de Janeiro" = "Rio De Janeiro",
+                            "Rio Grande do Norte" = "Rio Grande Do Norte",
+                            "Espírito Santo" ="Espirito Santo"),
+         sum_consumpt = Calcium_kg +Iron_kg+Zinc_kg+ `Vitamin-A_kg`+ Omega3_kg
+  ) %>%
+  arrange (QTD_kg)
+#mutate (kg_consumed = mean_year_cons_kg*mean_N_pop) %>%
+#mutate_each (funs(.*mean_N_pop), ends_with("kg"))  %>% # extrapolate to all people
+#mutate_each (funs(./Ninterv), ends_with("kg"))  # per capita consumption
+
+
+
+# statistics per state
+
+consumption_nutrients
 
 # have BR map
 require("geobr")
@@ -302,12 +449,14 @@ states_consumption <- dplyr::left_join(BR_states %>%
 
 # br map
 map_BR <- ggplot(data = states_consumption %>%
-                   filter (is.na(mean_N_pop ) != T)) +
-  geom_sf(aes(fill=QTD_kg),
-          colour="black",
+                   group_by(name_region,state)  %>% 
+                   summarise(QTD_kg=mean(QTD_kg,na.rm=T))%>%
+                   filter (is.na(QTD_kg) != T)) +
+  geom_sf(aes(fill=QTD_kg,
+          colour=name_region),
           size=0.5) + 
   theme_classic() +
-  theme (legend.position = c(0.12,0.42),
+  theme (legend.position = "right",
          legend.direction = "vertical",
          legend.key.size = unit(1,"cm"),
          legend.text = element_text(size=8),
@@ -325,7 +474,8 @@ map_BR <- ggplot(data = states_consumption %>%
          #legend.box.background = element_rect(fill = "transparent"),
          #legend.key = element_rect(fill = "transparent")
          )+
-  scale_fill_gradient(low = "white", high = "black") + 
+  scale_fill_gradient(low = "#BCCEF8", high = "#181D31") + 
+  scale_colour_brewer(palette = "Spectral",direction=1)+
   guides(fill=guide_legend(title=("Seafood\nconsumption\n(kg)")))
   
 

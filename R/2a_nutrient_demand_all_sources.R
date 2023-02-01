@@ -94,9 +94,13 @@ consumption_nutrients_day$region <- factor (consumption_nutrients_day$region,
 # plots with breaks
 # protein
 ptn_plot <- consumption_nutrients_day %>% 
+  
   filter (Nutrient== "PTN") %>%
+  
+  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  
   ggplot(aes (x=region,
-              y=log(Quantity),
+              y=(Quantity),
               fill = sea_food,
               colour=sea_food))+
   #geom_point(position=position_jitter(width=.15),
@@ -106,20 +110,20 @@ ptn_plot <- consumption_nutrients_day %>%
                    alpha=0.3)+
   scale_colour_brewer(palette="Dark2",direction = -1)+
   scale_fill_brewer(palette="Dark2",direction = -1)+
-  geom_boxplot(alpha=0.5)+
+  geom_boxplot(alpha=0.5,outlier.shape = NA)+
   coord_flip()+
   facet_wrap(~Nutrient)+
   theme_cowplot()+
   guides(fill=FALSE) +
-  ylab ("Daily per capita consumption (g, natural log scale)") +
+  ylab ("Daily per capita consumption (g, natural  scale)") +
   xlab ("Region")+
-  geom_hline (aes (yintercept=log(threshold)),
+  geom_hline (aes (yintercept=(threshold)),
               color= "black",
               size=1,
               linetype="dashed") +
   theme(legend.position = "none",
-        axis.title.x = element_blank())# +
-  scale_y_break(c(600, 1000), expand=T,scales="fixed")
+        axis.title.x = element_blank()) +
+  scale_y_break(c(30, 46), expand=T,scales="fixed")
 
 ptn_plot
 
@@ -129,8 +133,10 @@ zinc_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Zinc") %>%
   
+  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  
   ggplot(aes (x=region,
-              y=log(Quantity),
+              y=(Quantity),
               fill = sea_food,
               colour=sea_food))+
   #geom_point(position=position_jitter(width=.15),
@@ -140,21 +146,21 @@ zinc_plot <- consumption_nutrients_day  %>%
                    alpha=0.3)+
   scale_colour_brewer(palette="Dark2",direction = -1)+
   scale_fill_brewer(palette="Dark2",direction = -1)+
-  geom_boxplot(alpha=0.5)+
+  geom_boxplot(alpha=0.5,outlier.shape = NA)+
   coord_flip()+
   facet_wrap(~Nutrient)+
   theme_cowplot()+
   guides(fill=FALSE) +
-  ylab ("Daily per capita consumption (g, natural log scale)") +
+  ylab ("Daily per capita consumption (g, natural  scale)") +
   xlab ("Region")+
-  geom_hline (aes (yintercept=log(threshold)),
+  geom_hline (aes (yintercept=(threshold)),
               color= "black",
               size=1,
               linetype="dashed")+
   theme(legend.position = "none",
         axis.title = element_blank(),
-        axis.text.y = element_blank()) #+
-  #scale_y_break(c(20, 140), expand=T,scales="fixed")
+        axis.text.y = element_blank()) +
+  scale_y_break(c(4.5, 9.5), expand=T,scales="fixed")
   
 zinc_plot
 
@@ -164,8 +170,10 @@ iron_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Iron") %>%
   
+  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  
   ggplot(aes (x=region,
-              y=log(Quantity),
+              y=(Quantity),
               fill = sea_food,
               colour=sea_food))+
   #geom_point(position=position_jitter(width=.15),
@@ -175,20 +183,20 @@ iron_plot <- consumption_nutrients_day  %>%
                    alpha=0.3)+
   scale_colour_brewer(palette="Dark2",direction = -1)+
   scale_fill_brewer(palette="Dark2",direction = -1)+
-  geom_boxplot(alpha=0.5)+
+  geom_boxplot(alpha=0.5,outlier.shape = NA)+
   coord_flip()+
   facet_wrap(~Nutrient)+
   theme_cowplot()+
   guides(fill=FALSE) +
-  ylab ("Daily per capita consumption (g, natural log scale)") +
+  ylab ("Daily per capita consumption (g, natural  scale)") +
   xlab ("Region")+
-  geom_hline (aes (yintercept=log(threshold)),
+  geom_hline (aes (yintercept=(threshold)),
               color= "black",
               size=1,
               linetype="dashed")+
   theme(legend.position = "none",
-        axis.title.x = element_blank())# +
-  #scale_y_break(c(115, 180), expand=T,scales="fixed")
+        axis.title.x = element_blank()) +
+  scale_y_break(c(1.7, 21.2), expand=T,scales="fixed")
 
 iron_plot
 
@@ -197,8 +205,10 @@ calcium_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Calcium") %>%
   
+  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  
   ggplot(aes (x=region,
-              y=log(Quantity),
+              y=(Quantity),
               fill = sea_food,
               colour=sea_food))+
   #geom_point(position=position_jitter(width=.15),
@@ -208,18 +218,18 @@ calcium_plot <- consumption_nutrients_day  %>%
                    alpha=0.3)+
   scale_colour_brewer(palette="Dark2",direction = -1)+
   scale_fill_brewer(palette="Dark2",direction = -1)+
-  geom_boxplot(alpha=0.5)+
+  geom_boxplot(alpha=0.5,outlier.shape = NA)+
   facet_wrap(~Nutrient)+
   coord_flip()+
   theme_cowplot()+
   guides(fill=FALSE) +
-  ylab ("Daily per capita consumption (g, natural log scale)") +
+  ylab ("Daily per capita consumption (g, natural  scale)") +
   xlab ("Region")+
-  geom_hline (aes (yintercept=log(threshold)),
+  geom_hline (aes (yintercept=(threshold)),
               color= "black",
               size=1,
               linetype="dashed") +
-  theme(legend.position = c(0.01,0.2),
+  theme(legend.position = "none",
         legend.title = element_blank(),
         legend.background =  element_rect(
                   colour ="lightgray",
@@ -227,8 +237,8 @@ calcium_plot <- consumption_nutrients_day  %>%
                      size=2, linetype="solid"),
         
         axis.title = element_blank(),
-        axis.text.y = element_blank())# +
-  #scale_y_break(c(3000, 5500), expand=T,scales="fixed")
+        axis.text.y = element_blank()) +
+  scale_y_break(c(150, 990), expand=T,scales="fixed")
 
 calcium_plot
 
@@ -238,8 +248,10 @@ omega_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Omega3") %>%
   
+  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  
   ggplot(aes (x=region,
-              y=log(Quantity),
+              y=(Quantity*1000),
               fill = sea_food,
               colour=sea_food))+
   #geom_point(position=position_jitter(width=.15),
@@ -249,19 +261,18 @@ omega_plot <- consumption_nutrients_day  %>%
                    alpha=0.3)+
   scale_colour_brewer(palette="Dark2",direction = -1)+
   scale_fill_brewer(palette="Dark2",direction = -1)+
-  geom_boxplot(alpha=0.5)+
+  geom_boxplot(alpha=0.5,outlier.shape = NA)+
   facet_wrap(~Nutrient)+
   coord_flip()+
   theme_cowplot()+
   guides(fill=FALSE) +
-  ylab ("Daily per capita consumption (g, natural log scale)") +
+  ylab ("Daily per capita consumption (mg, natural  scale)") +
   xlab ("Region")+
-  geom_hline (aes (yintercept=log(threshold_g)),
+  geom_hline (aes (yintercept=(threshold)),
               color= "black",
               size=1,
               linetype="dashed") +
-  theme(legend.position = "none")# +
-  #scale_y_break(c(30, 249.7), expand=T,scales="fixed")
+  theme(legend.position = "none")
 
 omega_plot
 
@@ -271,8 +282,10 @@ vitA_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Vitamin-A") %>%
   
+  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  
   ggplot(aes (x=region,
-              y=log(Quantity),
+              y=(Quantity),
               fill = sea_food,
               colour=sea_food))+
   #geom_point(position=position_jitter(width=.15),
@@ -282,36 +295,71 @@ vitA_plot <- consumption_nutrients_day  %>%
                    alpha=0.3)+
   scale_colour_brewer(palette="Dark2",direction = -1)+
   scale_fill_brewer(palette="Dark2",direction = -1)+
-  geom_boxplot(alpha=0.5)+
+  geom_boxplot(alpha=0.5,outlier.shape = NA) +
+  #scale_y_continuous(limits = quantile(~.Quantity, c(0.1, 0.9)))+
   facet_wrap(~Nutrient)+
   coord_flip()+
   theme_cowplot()+
   guides(fill=FALSE) +
-  ylab ("Daily per capita consumption (g, natural log scale)") +
+  ylab ("Daily per capita consumption (g, natural  scale)") +
   xlab ("Region")+
-  geom_hline (aes (yintercept=log(threshold)),
+  geom_hline (aes (yintercept=(threshold)),
               color= "black",
               size=1,
               linetype="dashed") +
   theme(legend.position = "none",
         axis.title.y = element_blank(),
-        axis.text.y = element_blank())# + 
-  #scale_y_break(c(1000, 94750), expand=T,scales="fixed")
+        axis.text.y = element_blank()) + 
+  scale_y_break(c(10, 795), expand=T,scales="fixed")
 
 vitA_plot
+
+
+# vitamin A
+magnesium_plot <- consumption_nutrients_day  %>%
+  
+  filter (Nutrient== "Magnesium") %>%
+  
+  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  
+  ggplot(aes (x=region,
+              y=(Quantity),
+              fill = sea_food,
+              colour=sea_food))+
+  #geom_point(position=position_jitter(width=.15),
+  #           size=.25,alpha=0.2)+
+  geom_flat_violin(position=position_nudge(x=.2,y=0),
+                   adjust=2,
+                   alpha=0.3)+
+  scale_colour_brewer(palette="Dark2",direction = -1)+
+  scale_fill_brewer(palette="Dark2",direction = -1)+
+  geom_boxplot(alpha=0.5,outlier.shape = NA)+
+  facet_wrap(~Nutrient)+
+  coord_flip()+
+  theme_cowplot()+
+  guides(fill=FALSE) +
+  ylab ("Daily per capita consumption (g, natural  scale)") +
+  xlab ("Region")+
+  geom_hline (aes (yintercept=(threshold)),
+              color= "black",
+              size=1,
+              linetype="dashed") +
+  theme(legend.position = "none",
+        axis.title.x = element_blank())  + 
+  scale_y_break(c(32, 305), expand=T,scales="fixed")
+
+magnesium_plot
 
 # arrange 
 
 require(patchwork)
-pdf(here ("output","patchwork_nutrients.pdf"),width =15,height = 12)
+pdf(here ("output","patchwork_nutrients.pdf"),width =8,height = 12)
 
-(ptn_plot | calcium_plot)/(iron_plot| zinc_plot)/(omega_plot | vitA_plot)
+(ptn_plot)/ ( magnesium_plot | calcium_plot)/(iron_plot| zinc_plot)/(omega_plot | vitA_plot)
 
 dev.off()
 
-
 # ------------------------------------------
-
 
 
 # filter the days
@@ -341,8 +389,8 @@ consumption_nutrients_day <- filter_interesting_food %>%
             Ninterv = n_distinct(COD_INFOR),
             Ndays = mean(Ndays)) %>%
   mutate_at(vars (QTD:Magnesium), funs(. / Ndays))  %>% 
-  group_by(region,sea_food) %>%  # income_cat # summarize by person
-  summarise(across (QTD:Magnesium, ~mean(.x, na.rm=T))) %>% # sum of personal consumption
+  #group_by(region,sea_food) %>%  # income_cat # summarize by person
+  #summarise(across (QTD:Magnesium, ~mean(.x, na.rm=T))) %>% # sum of personal consumption
   
   # long format
   gather (Nutrient,Quantity,PTN:Magnesium) %>% 
@@ -357,6 +405,38 @@ consumption_nutrients_day <- filter_interesting_food %>%
   mutate(sea_food = recode(sea_food, "0" = "All sources",
                            "1" = "Seafood"
   ))
+
+
+# --------------------------------------------
+# analyze
+
+
+# run model (ancova)
+model.ancova <- lapply (unique(consumption_nutrients_day$Nutrient), function (i)
+  
+  lm ((Quantity) ~ region*sea_food-1,
+      data=consumption_nutrients_day[which(consumption_nutrients_day$Nutrient == i),])
+  
+)
+
+
+# summary of results
+summary (model.ancova[[1]])
+tab_model(model.ancova[[1]])
+
+newdat<-data.frame(region=c("Northeast",
+                           "South",
+                            "Southeast",
+                            "North"),
+                   sea_food="Seafood")
+ (predict (model.ancova[[1]],
+         newdata = newdat ,
+         type = "terms",
+         se.fit=F,
+         interval = "confidence"))
+
+
+do.call(rbind,model.ancova[[1]][1:4])
 
 
 consumption_nutrients_day %>% 
@@ -375,4 +455,4 @@ consumption_nutrients_day %>%
 
 # end
 
-rm(list=ls())
+# rm(list=ls())

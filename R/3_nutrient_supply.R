@@ -7,12 +7,12 @@ require(here)
 require(openxlsx)
 require(vegan)
 require(ape)
-source ("functions.R")
 require(ggrepel)
 require(gridExtra)
 require(dplyr)
 require("openxlsx")
 
+source ("R/functions.R")
 
 
 # load fisheries data (Freire et al. 2021)
@@ -556,15 +556,21 @@ names(most_catched_list) <- c("North","Northeast", "Southeast", "South")
 
 tab_names <- lapply (most_catched_list, function (i) 
   
-  data.frame (Catch_amount =i,
+  data.frame (Catch_amount =round (i,2),
               Species_taxon= names(i),
              Abbreviation = paste (substr (sapply (strsplit (names(i), " "), "[[", 1),1,3),
                          substr (sapply (strsplit (names(i), " "), "[[", 2),1,3),
                          sep=" ")
   )
 )
+
 # melt
 tab_names<-do.call(rbind, tab_names)
+
+tab_names<-cbind (tab_names,
+       fisheries_wtrait [match (tab_names$Species_taxon,
+                         fisheries_wtrait$TaxonName),c("class","family")])
+
 
 # save
 write.xlsx (tab_names, file = here ("output", "tab_names_catch.xlsx"), 

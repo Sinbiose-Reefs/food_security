@@ -8,6 +8,8 @@ require(openxlsx)
 require(reshape)
 
 
+
+
 # REGISTRO - MORADOR
 # PS: already saved as RData
 #MORADOR <- 
@@ -36,6 +38,9 @@ require(reshape)
 #  )   
 #
 
+
+# load data
+load (".RData")
 
 ## create an identified to each unit
 MORADOR$COD_INFOR  <- paste(MORADOR$UF,
@@ -304,9 +309,12 @@ tab_prop_class_state_df$Localidade [which(tab_prop_class_state_df$Localidade == 
 
 
 # match with the complete dataset
-tab_N_class_state_df$interact_state_class <- paste (tab_N_class_state_df$Localidade, tab_N_class_state_df$Nome,sep=".")
-tab_prop_class_state_df$interact_state_class<- paste (tab_prop_class_state_df$Localidade, tab_prop_class_state_df$Nome,sep=".")
-CONSUMO_ALIMENTAR$interact_state_class <- paste (CONSUMO_ALIMENTAR$state, CONSUMO_ALIMENTAR$income_cat,sep=".")
+tab_N_class_state_df$interact_state_class <- paste (tab_N_class_state_df$Localidade, 
+                                                    tab_N_class_state_df$variable,sep=".")
+tab_prop_class_state_df$interact_state_class<- paste (tab_prop_class_state_df$Localidade, 
+                                                      tab_prop_class_state_df$variable,sep=".")
+CONSUMO_ALIMENTAR$interact_state_class <- paste (CONSUMO_ALIMENTAR$state, 
+                                                 CONSUMO_ALIMENTAR$income_cat,sep=".")
 
 # POF data did not have all combinations of class and state
 length(unique(tab_prop_class_state_df$interact_state_class))
@@ -380,6 +388,14 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
 
 
 
+# factor bluefood
+
+CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>% 
+  
+  mutate(general_type, bluefood=ifelse (general_type %in% c("Seafood","Freshwater fish",
+                                                            "Imported fish"),
+                                        "Bluefood",
+                                        "RedMeat"))
 
 
 # useful data to report in the paper
@@ -410,7 +426,7 @@ save (CONSUMO_ALIMENTAR, file = here ("output",
 
 
 # end data organization
-#rm(list=ls())
+rm(list=ls())
 
 
 
