@@ -60,7 +60,17 @@ consumption_nutrients_day <- filter_interesting_food %>%
           `Vitamin-A`, 
           Omega3,
           Magnesium) %>% # select  variables (nutrients) to test
+  
+  # edit seafood factor
+  mutate_at ("region", as.factor) %>%
+  mutate_at ("sea_food", as.factor) %>%
+  
+  mutate(sea_food = recode(sea_food, "0" = "All sources",
+                                    "1" = "Seafood"
+  )) %>%
+
   # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
+  
   group_by(region,state,income_cat,sea_food,COD_INFOR) %>%  # summarize by person
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
             mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
@@ -75,14 +85,65 @@ consumption_nutrients_day <- filter_interesting_food %>%
   # add FAO thresholds (the col "Nutrient" automatically matches)
   right_join(FAO_threshold) %>%
   # remove NAs
-  filter (is.na (Nutrient) != T ) %>%
-  mutate_at ("region", as.factor) %>%
+  filter (is.na (Nutrient) != T )
+  
+
+# all nutrients ()
+consumption_nutrients_day_all <- filter_interesting_food %>%
+  arrange(state)%>% # ordering states
+  #filter (position == "sea") %>% # coastal states
+  select (region,
+          state,
+          income_cat,
+          COD_INFOR,
+          DIA_SEMANA,
+          N_pop_class, 
+          Ndays,
+          sea_food,
+          QTD, 
+          PTN,
+          Calcium, 
+          Iron, 
+          Zinc, 
+          `Vitamin-A`, 
+          Omega3,
+          Magnesium) %>% # select  variables (nutrients) to test
+  
   # edit seafood factor
+  mutate_at ("region", as.factor) %>%
   mutate_at ("sea_food", as.factor) %>%
   
-  mutate(sea_food = recode(sea_food, "0" = "Other sources",
-                           "1" = "Seafood"
-  ))  
+  mutate(sea_food = recode(sea_food, "0" = "All sources",
+                                     "1" = "All sources"
+  )) %>%
+  
+  # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
+  
+  group_by(region,state,income_cat,sea_food,COD_INFOR) %>%  # summarize by person
+  summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
+            mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
+            Ninterv = n_distinct(COD_INFOR),
+            Ndays = mean(Ndays)) %>%
+  mutate_at(vars (QTD:Magnesium), funs(. / Ndays))  %>% 
+  #group_by(region,state,sea_food) %>%  # income_cat # summarize by person
+  #summarise(across (QTD:Magnesium, ~mean(.x, na.rm=T))) %>% # sum of personal consumption
+  
+  # long format
+  gather (Nutrient,Quantity,PTN:Magnesium) %>% 
+  # add FAO thresholds (the col "Nutrient" automatically matches)
+  right_join(FAO_threshold) %>%
+  # remove NAs
+  filter (is.na (Nutrient) != T ) 
+                                        
+                                           
+# all data to plot                                         
+consumption_nutrients_day <- bind_rows(consumption_nutrients_day %>%
+                                filter (sea_food == "Seafood"), # only seafood
+          consumption_nutrients_day_all) #all sources
+
+                                         
+                                         
+    
 
 # factor order
 consumption_nutrients_day$region <- factor (consumption_nutrients_day$region, 
@@ -352,59 +413,31 @@ magnesium_plot
 
 # arrange 
 
-require(patchwork)
-pdf(here ("output","patchwork_nutrients.pdf"),width =8,height = 12)
 
+ 
+                
+              pdf(here ("output",
+                        "patchwork_nutrients.pdf"),width =8,height = 12, onefile=T)
+              lapply (list (ptn_plot,
+                            magnesium_plot, 
+                            calcium_plot, 
+                            iron_plot, 
+                            zinc_plot, 
+                            omega_plot, 
+                            vitA_plot), function (i)
+                  i)
+              
+              dev.off()
+              
+              
+
+# require(patchwork)
 (ptn_plot)/ ( magnesium_plot | calcium_plot)/(iron_plot| zinc_plot)/(omega_plot | vitA_plot)
-
-dev.off()
+(ptn_plot)/ ( magnesium_plot) / (calcium_plot)/ (iron_plot)/ (zinc_plot)/(omega_plot) / (vitA_plot)
 
 # ------------------------------------------
 
-
-# filter the days
-consumption_nutrients_day <- filter_interesting_food %>%
-  arrange(state)%>% # ordering states
-  #filter (position == "sea") %>% # coastal states
-  select (region,
-          state,
-          income_cat,
-          COD_INFOR,
-          DIA_SEMANA,
-          N_pop_class, 
-          Ndays,
-          sea_food,
-          QTD, 
-          PTN,
-          Calcium, 
-          Iron, 
-          Zinc, 
-          `Vitamin-A`, 
-          Omega3,
-          Magnesium) %>% # select  variables (nutrients) to test
-  # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
-  group_by(region,state,income_cat,sea_food,COD_INFOR) %>%  # summarize by person
-  summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
-            mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
-            Ninterv = n_distinct(COD_INFOR),
-            Ndays = mean(Ndays)) %>%
-  mutate_at(vars (QTD:Magnesium), funs(. / Ndays))  %>% 
-  #group_by(region,sea_food) %>%  # income_cat # summarize by person
-  #summarise(across (QTD:Magnesium, ~mean(.x, na.rm=T))) %>% # sum of personal consumption
-  
-  # long format
-  gather (Nutrient,Quantity,PTN:Magnesium) %>% 
-  # add FAO thresholds (the col "Nutrient" automatically matches)
-  right_join(FAO_threshold) %>%
-  # remove NAs
-  filter (is.na (Nutrient) != T ) %>%
-  
-  # edit seafood factor
-  mutate_at ("sea_food", as.factor) %>%
-  
-  mutate(sea_food = recode(sea_food, "0" = "All sources",
-                           "1" = "Seafood"
-  ))
+# statistical analysis
 
 
 # --------------------------------------------
@@ -414,45 +447,56 @@ consumption_nutrients_day <- filter_interesting_food %>%
 # run model (ancova)
 model.ancova <- lapply (unique(consumption_nutrients_day$Nutrient), function (i)
   
-  lm ((Quantity) ~ region*sea_food-1,
+  aov ((Quantity) ~ region*sea_food,
       data=consumption_nutrients_day[which(consumption_nutrients_day$Nutrient == i),])
   
 )
 
 
 # summary of results
-summary (model.ancova[[1]])
-tab_model(model.ancova[[1]])
+lapply (model.ancova, summary)
+# posthoc analysis
+posthoc_test <- lapply (model.ancova, TukeyHSD, "region:sea_food")
 
-newdat<-data.frame(region=c("Northeast",
-                           "South",
-                            "Southeast",
-                            "North"),
-                   sea_food="Seafood")
- (predict (model.ancova[[1]],
-         newdata = newdat ,
-         type = "terms",
-         se.fit=F,
-         interval = "confidence"))
+# nutrients
+nuts <- unique(consumption_nutrients_day$Nutrient)
+plots_interaction <- lapply (seq (1,length(nuts)), function (i)
 
+  GGTukey.2(posthoc_test[[i]])+ggtitle (nuts[i]) + theme(legend.position = "none")
 
-do.call(rbind,model.ancova[[1]][1:4])
+  )
 
-
-consumption_nutrients_day %>% 
-  filter (Nutrient== "PTN") %>%
-  ggplot (aes (x=Quantity,
-               y=region,
-               fill = sea_food)) +
-  geom_bar(position="stack", stat="identity") +
-  geom_vline (aes (xintercept=threshold),
-              color= "black",
-              size=1.2,
-              linetype="dashed")+
-  facet_wrap(~Nutrient,scales = "free_x",nrow=1)+
-  scale_fill_viridis_d(direction = -1, begin=0.2,end=0.8)
+# plot vit-A without interaction
+posthoc_test_vit.a_region <- TukeyHSD(model.ancova[[5]], "region")
+posthoc_test_vit.a_sf <- TukeyHSD(model.ancova[[5]], "sea_food")
+plots_vita<-GGTukey.2(posthoc_test_vit.a_region)+ggtitle (nuts[5]) 
 
 
-# end
-
-# rm(list=ls())
+# plot and save
+pdf(here ("output", "tukeyhsd_plots.pdf"),height=17,width=10)
+grid.arrange(plots_interaction[[1]]+theme(legend.position = "none",
+                                          plot.title = element_text(size=14)),
+             plots_interaction[[2]]+theme(axis.text.y =  element_blank(),
+                                          legend.position = "none",
+                                          plot.title = element_text(size=14)),
+             plots_interaction[[3]]+theme(legend.position = "none",
+                                          plot.title = element_text(size=14)),
+             plots_interaction[[4]]+theme(axis.text.y =  element_blank(),
+                                          legend.position = "none",
+                                          plot.title = element_text(size=14)),
+             plots_interaction[[6]]+theme(legend.position = "none",
+                                          plot.title = element_text(size=14)),
+             plots_interaction[[7]]+theme(axis.text.y =  element_blank(),
+                                          legend.position = "none",
+                                          plot.title = element_text(size=14)),
+             plots_vita+theme(plot.title = element_text(size=14)),
+             
+             ncol=3,nrow=4,
+             layout_matrix = rbind (c(1,1,2),
+                                    c(3,3,4),
+                                    c(5,5,6),
+                                    c(7,7,NA))
+             
+             
+)
+dev.off()
