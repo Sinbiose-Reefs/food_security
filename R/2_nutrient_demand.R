@@ -302,7 +302,8 @@ teste <- (filter_interesting_food [which (filter_interesting_food$COD_INFOR == "
 
 fun_kg_year (sum(teste$QTD)/mean(teste$Ndays))
 consumption_nutrients %>%
-  filter (COD_INFOR == "21_2121_2_210079610_11_1_1")
+  filter (COD_INFOR == "21_2121_2_210079610_11_1_1") %>%
+  select (QTD_kg)
 
 teste2 <- (consumption_nutrients [which (consumption_nutrients$state == "Maranhão" &
                                            consumption_nutrients$income_cat == "Class E"),])
@@ -312,7 +313,6 @@ mean(teste2$QTD)
 # filter the days
 consumption_nutrients <-  filter_interesting_food %>%
   arrange(state)%>% # ordering states
-  #filter (position == "sea") %>% # coastal states
   select (region,
           state,
           income_cat,
@@ -419,12 +419,13 @@ consumption_nutrients <- filter_interesting_food %>%
   mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
           mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
           Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
-  group_by(region,state) %>% # further group by state and class (summarize individual consumption)
+  group_by(region,state,income_cat) %>% # further group by state and class (summarize individual consumption)
   summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)),
             # per capita consumption in kg (mean across interviewees)
             mean_N_pop = mean(mean_N_pop,na.rm=T),
             Ninterv = mean (Ninterv,na.rm=T)
   ) %>%
+  
   #complete(income_cat) %>% # keep all levels
   mutate_at(c("Calcium_kg",
               "Iron_kg",
@@ -439,6 +440,7 @@ consumption_nutrients <- filter_interesting_food %>%
          sum_consumpt = Calcium_kg +Iron_kg+Zinc_kg+ `Vitamin-A_kg`+ Omega3_kg
   ) %>%
   arrange (QTD_kg)
+  
 #mutate (kg_consumed = mean_year_cons_kg*mean_N_pop) %>%
 #mutate_each (funs(.*mean_N_pop), ends_with("kg"))  %>% # extrapolate to all people
 #mutate_each (funs(./Ninterv), ends_with("kg"))  # per capita consumption
@@ -576,7 +578,7 @@ p1 <- ggplot(data = total_consumption_data) +
                                   max(states_consumption$QTD,na.rm=T)),
                        breaks = round (seq(min(states_consumption$QTD,na.rm=T),
                                     max(states_consumption$QTD,na.rm=T),
-                                    3),1)) +
+                                    3),20)) +
   no_axis+
   facet_wrap(~income_cat,scales="fixed",ncol=5)   
   
