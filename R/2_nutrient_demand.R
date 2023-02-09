@@ -497,9 +497,9 @@ map_BR <- ggplot(data = states_consumption %>%
          #legend.box.background = element_rect(fill = "transparent"),
          #legend.key = element_rect(fill = "transparent")
          )+
-  scale_fill_gradient(low = "#BCCEF8", high = "#181D31") + 
+  scale_fill_gradient(low = "#B7DAF9", high = "#032442")+ 
   scale_colour_brewer(palette = "Spectral",direction=1)+
-  guides(fill=guide_legend(title=("Seafood\nconsumption\n(kg)")))
+  guides(colour=guide_legend(title=("Region")))
   
 
 map_BR
@@ -570,15 +570,14 @@ p1 <- ggplot(data = total_consumption_data) +
           size=.15) +
   labs(subtitle="Total seafood consumption, Brazilian coastal states, 2017-2018", 
        size=8) +
-  scale_fill_distiller(palette = "Greys", 
-                       name="(kg/year)", 
+  scale_fill_gradient(low = "#B7DAF9", high = "#032442",
+                      name="(kg/year)", 
                        na.value = "red",
-                       direction=-1,
                        limits = c(min(states_consumption$QTD,na.rm=T),
                                   max(states_consumption$QTD,na.rm=T)),
                        breaks = round (seq(min(states_consumption$QTD,na.rm=T),
                                     max(states_consumption$QTD,na.rm=T),
-                                    3),20)) +
+                                    20),2)) +
   no_axis+
   facet_wrap(~income_cat,scales="fixed",ncol=5)   
   
