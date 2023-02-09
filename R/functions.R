@@ -61,7 +61,9 @@ GGTukey.2<-function(Tukey){
                            "significant",
                            "not significant")
   )
+  
   D<-C%>%
+    #filter (idt == "not significant") %>%
     ggplot(aes(id,color=idt))+
     geom_errorbar(aes(ymin=min,
                       ymax=max),

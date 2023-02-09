@@ -121,6 +121,21 @@ CONSUMO_ALIMENTAR$COD_INFOR  <- paste(CONSUMO_ALIMENTAR$UF,
 length(unique(CONSUMO_ALIMENTAR$COD_INFOR  ))
 
 
+## create an identified to each family
+
+CONSUMO_ALIMENTAR$COD_FAMILY  <- paste(CONSUMO_ALIMENTAR$UF,
+                                      CONSUMO_ALIMENTAR$ESTRATO_POF,
+                                      CONSUMO_ALIMENTAR$TIPO_SITUACAO_REG,
+                                      CONSUMO_ALIMENTAR$COD_UPA,
+                                      CONSUMO_ALIMENTAR$NUM_DOM,
+                                      CONSUMO_ALIMENTAR$NUM_UC,
+                                      
+                                      sep = "_")
+
+length(unique(CONSUMO_ALIMENTAR$COD_FAMILY  ))
+
+
+
 #View(CONSUMO_ALIMENTAR[which(CONSUMO_ALIMENTAR$COD_UPA == "110000016"),])
 #table(CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$COD_INFOR  == CONSUMO_ALIMENTAR$COD_INFOR [1]),"V9001"],
 #      CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$COD_INFOR  == CONSUMO_ALIMENTAR$COD_INFOR [1]),"QUADRO"])
@@ -241,7 +256,8 @@ CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
 
 
 # remove NAs
-CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR [is.na(CONSUMO_ALIMENTAR$protein_type)!= T,]
+# CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR [is.na(CONSUMO_ALIMENTAR$protein_type)!= T,]
+
 
 # discretisize income
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>% 
@@ -250,10 +266,7 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
   filter (is.na(PC_RENDA_MONET) != T)
   
 
-
-  
 # percentage of each class per State
-
 class_state<- read.csv (here ("POF_government", "Classes_municipios.csv"),
                         encoding = "UTF-8") 
 class_state <- (class_state [which(class_state$Unidade == "pessoas"),]) # selection N 
@@ -375,7 +388,7 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
                                
   )) %>% 
   filter (DIA_ATIPICO == 2) %>% # remove atypical days (1=atypical)
-  filter (general_type != "Beef&other") %>%
+  #filter (general_type != "Beef&other") %>%
   # remove beef&other
   dplyr::rename("Omega3"= Omega3 ,
                 "Calcium" = CALCIO,
@@ -383,8 +396,8 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
                 "Zinc" = ZINCO,
                 "Vitamin-A" = VITA_RAE,
                 "Magnesium" = MAGNESIO) %>% 
-  filter (position == "sea" & 
-            general_type != "DD")
+  filter (position == "sea") #& 
+            #general_type != "DD")
 
 
 
@@ -396,6 +409,23 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
                                                             "Imported fish"),
                                         "Bluefood",
                                         "RedMeat"))
+
+
+# bind the number of interview days
+Ndays <- lapply (unique(CONSUMO_ALIMENTAR$COD_INFOR), function (i)
+  
+               length (unique(CONSUMO_ALIMENTAR$DIA_SEMANA [which(CONSUMO_ALIMENTAR$COD_INFOR == i)]))
+)
+names(Ndays) <- unique(CONSUMO_ALIMENTAR$COD_INFOR)
+ # melt
+Ndays <- data.matrix (do.call(rbind,Ndays))
+dimnames(Ndays)[2] <- "Ndays"
+# match
+CONSUMO_ALIMENTAR$Ndays <- Ndays[match (CONSUMO_ALIMENTAR$COD_INFOR,
+                         rownames(Ndays)), "Ndays"]
+
+unique(CONSUMO_ALIMENTAR [which (CONSUMO_ALIMENTAR$COD_INFOR == "21_2121_2_210079610_11_1_1"),"DIA_SEMANA"])
+(CONSUMO_ALIMENTAR [which (CONSUMO_ALIMENTAR$COD_INFOR == "21_2121_2_210079610_11_1_1"),"Ndays"])
 
 
 # useful data to report in the paper
@@ -420,67 +450,32 @@ dat_state$prop <- dat_state$int/length(unique(CONSUMO_ALIMENTAR$COD_INFOR ))
 ))
 write.xlsx(dat_state,file = here ("output", "state_interviewees.xlsx"), rowNames=T)
 
-# save the dataset to data analysis
+
+# save  
 save (CONSUMO_ALIMENTAR, file = here ("output",
+                                      "fishConsumption_Income_all_food.RData"))
+
+
+# only meat 
+CONSUMO_ALIMENTAR_MEAT <- CONSUMO_ALIMENTAR %>% 
+  
+  # remove beef&other
+  filter (general_type != "Beef&other") %>%
+  
+  # removed indefined
+  filter (general_type != "DD")
+
+
+
+
+
+
+
+# food consumption - meat
+save (CONSUMO_ALIMENTAR_MEAT, file = here ("output",
                                       "fishConsumption_Income.RData"))
 
 
 # end data organization
 rm(list=ls())
 
-
-
-
-# garbage
-
-
-
-# LIST OF FRESHWATER FISH
-#FW_FISH <- c("PEIXE DE AGUA DOCE (EM POSTA, EM FILE, ETC)" ,
-#             "PEIXE DE AGUA DOCE SALGADO (EM POSTA, EM FILE, ETC)",
-#             "DOURADO", # marinho - ver o estado
-#             "DOURADO NA FOLHA DE BANANEIRA", # marinho
-#             "PITU",
-#             "PACU",
-#             "TAMBAQUI",
-#             "TUCUNARE")
-
-# LIST OF SEAWATER FISH
-#SW_FISH <- c("PEIXE DO MAR (EM POSTA, EM FILE, ETC)",
-#             "PEIXE SALGADO (EM POSTA, EM FILE, ETC)",
-#             "BACALHAU",
-#             "TARTARE DE SALMAO",
-#             "SARDINHA EM CONSERVA",
-#             "ATUM EM CONSERVA",
-#             "SALMAO EM CONSERVA",
-#             "ATUM EM CONSERVA LIGHT",
-#             "SARDELA",
-#             "BOLINHO DE BACALHAU",
-#             "SANDUICHE DE ATUM",
-#             "PAO COM ATUM",
-#             "PAO COM SALMAO",
-#             "SANDUICHE DE SALMAO",
-#             "SANDUICHE DE SARDINHA",
-#             "PAO COM SARDINHA",
-#             "PIZZA DE PEIXE (ATUM, SALMAO, SARDINHA)",
-#             "CUSCUZ DE ATUM",
-#             "ESCONDIDINHO DE BACALHAU",
-#             "SALADA DE ATUM",
-#             "SALADA DE BACALHAU COM BATATAS",
-#             "SALADA DE BATATA E ATUM",
-#             "MOUSSE DE SALMAO",
-#             "SUFLE DE BACALHAU",
-#             "TORTA DE BACALHAU",
-#             "TORTA DE PEIXE / ATUM / SARDINHA"
-#)
-
-
-# source of food 
-
-#CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
-#  mutate (env_food = ifelse (food_type  %in% SW_FISH,
-#                             "SWFISH",
-#                             ifelse (food_type %in% FW_FISH,
-#                                     "FW_FISH",
-#                                     NA)))
-#

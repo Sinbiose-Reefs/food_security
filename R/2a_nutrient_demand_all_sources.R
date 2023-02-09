@@ -21,24 +21,25 @@ source ("R/rainplot.R")
 # ----------------
 
 
-
 # load data for analysis
 load (here ("output",
-            "fishConsumption_Income.RData"))
+            "fishConsumption_Income_all_food.RData"))
+
 
 # 1 - daily consumption
 # filter the food
 filter_interesting_food <- CONSUMO_ALIMENTAR %>% 
-  filter (single_PTN == 1) %>% # seafood & only raw protein
-  mutate (Ndays=n_distinct(DIA_SEMANA)) %>% 
-  mutate_at("sea_food", ~replace_na(.,0))
-  
+  #filter (single_PTN == 1) %>% # seafood & only raw protein
+  mutate_at("sea_food", ~replace_na(.,0)) 
 
 
 # plots without the maps
 # with FAO's thresholds
 FAO_threshold <- openxlsx::read.xlsx (here ("data_fisheries_nutrients", "Threshold_FAO.xlsx"))
 
+# unique(filter_interesting_food [which (filter_interesting_food$COD_INFOR == "15_1514_2_150036787_15_1_2"),"DIA_SEMANA"])
+# (consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "15_1514_2_150036787_15_1_2"), "Ndays"] )
+View(consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "25_2501_1_250057870_5_1_1"), ] )
 
 # filter the days
 consumption_nutrients_day <- filter_interesting_food %>%
@@ -48,11 +49,13 @@ consumption_nutrients_day <- filter_interesting_food %>%
           state,
           income_cat,
           COD_INFOR,
+          COD_FAMILY,
           DIA_SEMANA,
           N_pop_class, 
           Ndays,
           sea_food,
           QTD, 
+          ENERGIA_KCAL,
           PTN,
           Calcium, 
           Iron, 
@@ -65,21 +68,22 @@ consumption_nutrients_day <- filter_interesting_food %>%
   mutate_at ("region", as.factor) %>%
   mutate_at ("sea_food", as.factor) %>%
   
-  mutate(sea_food = recode(sea_food, "0" = "All sources",
+  mutate(sea_food = recode(sea_food, "0" = "All minus seafood",
                                     "1" = "Seafood"
   )) %>%
 
-  # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
   
-  group_by(region,state,income_cat,sea_food,COD_INFOR) %>%  # summarize by person
+  group_by(region,state,income_cat,sea_food, COD_FAMILY,COD_INFOR) %>%  # summarize by person
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
             mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
             Ninterv = n_distinct(COD_INFOR),
-            Ndays = mean(Ndays)) %>%
+            Ndays = mean(Ndays)) %>% # 
+  
   mutate_at(vars (QTD:Magnesium), funs(. / Ndays))  %>% 
-  #group_by(region,state,sea_food) %>%  # income_cat # summarize by person
-  #summarise(across (QTD:Magnesium, ~mean(.x, na.rm=T))) %>% # sum of personal consumption
-            
+  
+  # transform grams into 2000 kcalories
+  #mutate_at(vars (PTN:Magnesium), funs((2000*.) / ENERGIA_KCAL)) %>%  
+  
   # long format
   gather (Nutrient,Quantity,PTN:Magnesium) %>% 
   # add FAO thresholds (the col "Nutrient" automatically matches)
@@ -96,11 +100,13 @@ consumption_nutrients_day_all <- filter_interesting_food %>%
           state,
           income_cat,
           COD_INFOR,
+          COD_FAMILY,
           DIA_SEMANA,
           N_pop_class, 
           Ndays,
           sea_food,
           QTD, 
+          ENERGIA_KCAL,
           PTN,
           Calcium, 
           Iron, 
@@ -117,33 +123,33 @@ consumption_nutrients_day_all <- filter_interesting_food %>%
                                      "1" = "All sources"
   )) %>%
   
-  # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
-  
-  group_by(region,state,income_cat,sea_food,COD_INFOR) %>%  # summarize by person
+  group_by(region,state,income_cat,sea_food, COD_FAMILY,COD_INFOR) %>%  # summarize by person
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
             mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
             Ninterv = n_distinct(COD_INFOR),
-            Ndays = mean(Ndays)) %>%
+            Ndays = mean(Ndays)) %>% # 
+  
   mutate_at(vars (QTD:Magnesium), funs(. / Ndays))  %>% 
-  #group_by(region,state,sea_food) %>%  # income_cat # summarize by person
-  #summarise(across (QTD:Magnesium, ~mean(.x, na.rm=T))) %>% # sum of personal consumption
+  
+  # transform grams into 2000 kcalories
+  #mutate_at(vars (PTN:Magnesium), funs((2000*.) / ENERGIA_KCAL)) %>%  
   
   # long format
   gather (Nutrient,Quantity,PTN:Magnesium) %>% 
   # add FAO thresholds (the col "Nutrient" automatically matches)
   right_join(FAO_threshold) %>%
   # remove NAs
-  filter (is.na (Nutrient) != T ) 
-                                        
+  filter (is.na (Nutrient) != T )
+
                                            
 # all data to plot                                         
-consumption_nutrients_day <- bind_rows(consumption_nutrients_day %>%
-                                filter (sea_food == "Seafood"), # only seafood
+consumption_nutrients_day <- bind_rows(consumption_nutrients_day# %>%
+                                #filter (sea_food == "All minus seafood")
+                                , # only seafood
           consumption_nutrients_day_all) #all sources
 
                                          
                                          
-    
 
 # factor order
 consumption_nutrients_day$region <- factor (consumption_nutrients_day$region, 
@@ -151,6 +157,12 @@ consumption_nutrients_day$region <- factor (consumption_nutrients_day$region,
                                                        "Southeast",
                                                        "Northeast", 
                                                        "North"))
+
+# seafood order
+consumption_nutrients_day$sea_food <- factor (consumption_nutrients_day$sea_food, 
+                                            levels = c("All sources",
+                                                       "All minus seafood",
+                                                       "Seafood"))
 
 # plots with breaks
 # protein
@@ -182,9 +194,9 @@ ptn_plot <- consumption_nutrients_day %>%
               color= "black",
               size=1,
               linetype="dashed") +
-  theme(legend.position = "none",
+  theme(legend.position = "right",
         axis.title.x = element_blank()) +
-  scale_y_break(c(30, 46), expand=T,scales="fixed")
+  scale_y_break(c(600, 900), expand=T,scales="fixed")
 
 ptn_plot
 
@@ -221,7 +233,7 @@ zinc_plot <- consumption_nutrients_day  %>%
   theme(legend.position = "none",
         axis.title = element_blank(),
         axis.text.y = element_blank()) +
-  scale_y_break(c(4.5, 9.5), expand=T,scales="fixed")
+  scale_y_break(c(40, 75), expand=T,scales="fixed")
   
 zinc_plot
 
@@ -231,7 +243,7 @@ iron_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Iron") %>%
   
-  filter (Quantity < quantile (Quantity, 0.90)) %>%
+ filter (Quantity < quantile (Quantity, 0.90)) %>%
   
   ggplot(aes (x=region,
               y=(Quantity),
@@ -257,7 +269,7 @@ iron_plot <- consumption_nutrients_day  %>%
               linetype="dashed")+
   theme(legend.position = "none",
         axis.title.x = element_blank()) +
-  scale_y_break(c(1.7, 21.2), expand=T,scales="fixed")
+  scale_y_break(c(40, 80), expand=T,scales="fixed")
 
 iron_plot
 
@@ -266,7 +278,7 @@ calcium_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Calcium") %>%
   
-  filter (Quantity < quantile (Quantity, 0.90)) %>%
+ filter (Quantity < quantile (Quantity, 0.90)) %>%
   
   ggplot(aes (x=region,
               y=(Quantity),
@@ -298,8 +310,8 @@ calcium_plot <- consumption_nutrients_day  %>%
                      size=2, linetype="solid"),
         
         axis.title = element_blank(),
-        axis.text.y = element_blank()) +
-  scale_y_break(c(150, 990), expand=T,scales="fixed")
+        axis.text.y = element_blank())+
+  scale_y_break(c(2000, 4000), expand=T,scales="fixed")
 
 calcium_plot
 
@@ -312,7 +324,7 @@ omega_plot <- consumption_nutrients_day  %>%
   filter (Quantity < quantile (Quantity, 0.90)) %>%
   
   ggplot(aes (x=region,
-              y=(Quantity*1000),
+              y=(Quantity),
               fill = sea_food,
               colour=sea_food))+
   #geom_point(position=position_jitter(width=.15),
@@ -333,17 +345,17 @@ omega_plot <- consumption_nutrients_day  %>%
               color= "black",
               size=1,
               linetype="dashed") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  scale_y_break(c(40, 240), expand=T,scales="fixed")
 
 omega_plot
-
 
 # vitamin A
 vitA_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Vitamin-A") %>%
   
-  filter (Quantity < quantile (Quantity, 0.90)) %>%
+ filter (Quantity < quantile (Quantity, 0.90)) %>%
   
   ggplot(aes (x=region,
               y=(Quantity),
@@ -371,7 +383,7 @@ vitA_plot <- consumption_nutrients_day  %>%
   theme(legend.position = "none",
         axis.title.y = element_blank(),
         axis.text.y = element_blank()) + 
-  scale_y_break(c(10, 795), expand=T,scales="fixed")
+  scale_y_break(c(800, 92000), expand=T,scales="fixed")
 
 vitA_plot
 
@@ -381,7 +393,7 @@ magnesium_plot <- consumption_nutrients_day  %>%
   
   filter (Nutrient== "Magnesium") %>%
   
-  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  #filter (Quantity < quantile (Quantity, 0.90)) %>%
   
   ggplot(aes (x=region,
               y=(Quantity),
@@ -406,28 +418,25 @@ magnesium_plot <- consumption_nutrients_day  %>%
               size=1,
               linetype="dashed") +
   theme(legend.position = "none",
-        axis.title.x = element_blank())  + 
-  scale_y_break(c(32, 305), expand=T,scales="fixed")
+        axis.title.x = element_blank())  +
+  scale_y_break(c(1000, 3000), expand=T,scales="fixed")
 
 magnesium_plot
 
 # arrange 
-
-
- 
-                
-              pdf(here ("output",
-                        "patchwork_nutrients.pdf"),width =8,height = 12, onefile=T)
-              lapply (list (ptn_plot,
-                            magnesium_plot, 
-                            calcium_plot, 
-                            iron_plot, 
-                            zinc_plot, 
-                            omega_plot, 
-                            vitA_plot), function (i)
-                  i)
+pdf(here ("output","patchwork_nutrients.pdf"),width =8,height = 12, onefile=T)
               
-              dev.off()
+lapply (list (ptn_plot,
+              magnesium_plot, 
+              calcium_plot, 
+              iron_plot, 
+              zinc_plot, 
+              omega_plot, 
+              vitA_plot), function (i)
+                  
+                i)
+              
+dev.off()
               
               
 
@@ -443,20 +452,126 @@ magnesium_plot
 # --------------------------------------------
 # analyze
 
-
+# number of families
+length(unique(consumption_nutrients_day$COD_FAMILY))
+length(unique(consumption_nutrients_day$COD_INFOR))
+              
+              
+              
 # run model (ancova)
-model.ancova <- lapply (unique(consumption_nutrients_day$Nutrient), function (i)
+model.anova <- lapply (unique(consumption_nutrients_day$Nutrient), function (i)
   
-  aov ((Quantity) ~ region*sea_food,
-      data=consumption_nutrients_day[which(consumption_nutrients_day$Nutrient == i),])
+  aov ((Quantity)- threshold~ region+Error (COD_FAMILY),#*(sea_food),#
+       #offset = (threshold),
+       data=consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
+         
+         filter (sea_food == "Seafood") %>%
+         
+         filter (Nutrient == i) %>%
+         
+         filter (Quantity < quantile (Quantity, 0.90)) 
+       
+       )
   
 )
 
 
+# anova table
+lapply (model.anova, summary)
+
 # summary of results
-lapply (model.ancova, summary)
+lapply (model.anova, function (i) summary (i$COD_FAMILY))
+lapply (model.anova, function (i) summary.lm (i$COD_FAMILY))
+
+
+
+rbind (
+    # intercepts
+    do.call(cbind, 
+    lapply (model.anova, function (i) coefficients(i)[1])
+    ),
+    # coefficients
+    do.call(cbind, 
+            lapply (model.anova, function (i) unlist(coefficients(i)[2]))
+    )
+)
+
+
+
+
+# all foood sources
+
+
+# run model (ancova)
+model.anova.all <- lapply (unique(consumption_nutrients_day$Nutrient), function (i)
+  
+  aov ((Quantity)- threshold~ region+Error (COD_FAMILY),#*(sea_food),#
+       #offset = (threshold),
+       data=consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
+         
+         filter (sea_food == "All sources") %>%
+         
+         filter (Nutrient == i) %>%
+         
+         filter (Quantity < quantile (Quantity, 0.90)) 
+       
+  )
+  
+)
+
+
+# anova table
+lapply (model.anova.all, summary)
+
+# summary of results
+lapply (model.anova.all, function (i) summary (i$COD_FAMILY))
+lapply (model.anova.all, function (i) summary.lm (i$COD_FAMILY))
+
+
+
+rbind (
+  # intercepts
+  do.call(cbind, 
+          lapply (model.anova.all, function (i) coefficients(i)[1])
+  ),
+  # coefficients
+  do.call(cbind, 
+          lapply (model.anova.all, function (i) unlist(coefficients(i)[2]))
+  )
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+par(mfrow=c(3,2))
+
+lapply (model.anova, plot)
+
+TukeyHSD (model.anova[[1]]$`(Intercept)`, "region")
+
+require("agricolae")
+
+HSD.test (model.anova[[1]]$Within, trt="region")
+
 # posthoc analysis
-posthoc_test <- lapply (model.ancova, TukeyHSD, "region:sea_food")
+posthoc_test <- lapply (model.anova, TukeyHSD, "region")
 
 # nutrients
 nuts <- unique(consumption_nutrients_day$Nutrient)
@@ -467,10 +582,10 @@ plots_interaction <- lapply (seq (1,length(nuts)), function (i)
   )
 
 # plot vit-A without interaction
-posthoc_test_vit.a_region <- TukeyHSD(model.ancova[[5]], "region")
+posthoc_test_vit.a_region <- TukeyHSD(model.anova[[5]], "region")
 posthoc_test_vit.a_sf <- TukeyHSD(model.ancova[[5]], "sea_food")
 plots_vita<-GGTukey.2(posthoc_test_vit.a_region)+ggtitle (nuts[5]) 
-
+GGTukey.2(posthoc_test_vit.a_sf)+ggtitle (nuts[5]) 
 
 # plot and save
 pdf(here ("output", "tukeyhsd_plots.pdf"),height=17,width=10)
@@ -489,7 +604,10 @@ grid.arrange(plots_interaction[[1]]+theme(legend.position = "none",
              plots_interaction[[7]]+theme(axis.text.y =  element_blank(),
                                           legend.position = "none",
                                           plot.title = element_text(size=14)),
-             plots_vita+theme(plot.title = element_text(size=14)),
+             #plots_vita+theme(plot.title = element_text(size=14)),
+             plots_interaction[[5]]+theme(axis.text.y =  element_blank(),
+                                          legend.position = "right",
+                                          plot.title = element_text(size=14)),
              
              ncol=3,nrow=4,
              layout_matrix = rbind (c(1,1,2),

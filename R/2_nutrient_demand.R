@@ -29,7 +29,7 @@ load (here ("output",
 
 # 1 - proportion
 
-foodType_ind <- dcast (data = CONSUMO_ALIMENTAR, 
+foodType_ind <- dcast (data = CONSUMO_ALIMENTAR_MEAT, 
        formula = COD_INFOR+income_cat+region~general_type,
        value.var= "QTD",
        fun.aggregate = sum,
@@ -212,7 +212,7 @@ p
 
 # only blue food
 
-foodType_ind <- dcast (data = CONSUMO_ALIMENTAR %>% 
+foodType_ind <- dcast (data = CONSUMO_ALIMENTAR_MEAT %>% 
                          
                          filter (bluefood == "Bluefood" &
                                    
@@ -251,6 +251,7 @@ agg_foodType_ind <- foodType_ind %>%
   summarise(across (cephalopod:SWfish,~ mean(.x, na.rm = TRUE))) %>% 
   gather ("food_type", "proportion")
 
+# save plot
 pdf (here ("output", "agg_foodType_ind.pdf"),width=5,height=6)  
 ggplot (data = agg_foodType_ind,
           aes (fill=food_type, 
@@ -282,8 +283,7 @@ dev.off()
 
 # 2 - daily consumption
 # filter the food
-filter_interesting_food <- CONSUMO_ALIMENTAR %>% 
-  mutate (Ndays=n_distinct(DIA_SEMANA)) %>%
+filter_interesting_food <- CONSUMO_ALIMENTAR_MEAT %>% 
   filter (sea_food == 1  & single_PTN == 1) # seafood & only raw protein
    
 
@@ -293,19 +293,37 @@ filter_interesting_food <- CONSUMO_ALIMENTAR %>%
 fun_kg_year <- function (x) {(x/1000)*365}
 
 
+(filter_interesting_food [which (filter_interesting_food$COD_INFOR == "21_2121_2_210079610_11_1_1"),])
+(consumption_nutrients[which(consumption_nutrients$COD_INFOR == "21_2121_2_210079610_11_1_1"), ] )
+
+
+
+teste <- (filter_interesting_food [which (filter_interesting_food$COD_INFOR == "21_2121_2_210079610_11_1_1"),])
+
+fun_kg_year (sum(teste$QTD)/mean(teste$Ndays))
+consumption_nutrients %>%
+  filter (COD_INFOR == "21_2121_2_210079610_11_1_1")
+
+teste2 <- (consumption_nutrients [which (consumption_nutrients$state == "Maranhão" &
+                                           consumption_nutrients$income_cat == "Class E"),])
+mean(teste2$QTD)
+
 
 # filter the days
-consumption_nutrients <- filter_interesting_food %>%
+consumption_nutrients <-  filter_interesting_food %>%
   arrange(state)%>% # ordering states
   #filter (position == "sea") %>% # coastal states
-  group_by(state,income_cat,COD_INFOR) %>% # group by interviewer
-  select (state,
+  select (region,
+          state,
           income_cat,
           COD_INFOR,
+          COD_FAMILY,
           DIA_SEMANA,
           N_pop_class, 
           Ndays,
+          sea_food,
           QTD, 
+          ENERGIA_KCAL,
           PTN,
           Calcium, 
           Iron, 
@@ -320,10 +338,13 @@ consumption_nutrients <- filter_interesting_food %>%
             Ninterv = n_distinct(COD_INFOR),
             Ndays = mean(Ndays)) %>% #, # N interview days
             # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
+  # quantity proportional to the number of days
   mutate_at(vars (QTD:Magnesium), funs(. / Ndays)) %>% 
+  # transform into kg
   mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
           mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
           Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
+  
   group_by(state,income_cat) %>% # further group by state and class (summarize individual consumption)
   summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)) , # per capita consumption in kg (mean across interviewees)
             mean_N_pop = mean(mean_N_pop,na.rm=T),
