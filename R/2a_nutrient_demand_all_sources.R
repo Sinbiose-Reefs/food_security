@@ -383,7 +383,7 @@ vitA_plot <- consumption_nutrients_day  %>%
   theme(legend.position = "none",
         axis.title.y = element_blank(),
         axis.text.y = element_blank()) + 
-  scale_y_break(c(800, 92000), expand=T,scales="fixed")
+  scale_y_break(c(800, 46000), expand=T,scales="fixed")
 
 vitA_plot
 
@@ -441,7 +441,9 @@ dev.off()
               
 
 # require(patchwork)
+pdf(here ("output","patchwork_nutrients.pdf"),width =8,height = 12, onefile=T)
 (ptn_plot)/ ( magnesium_plot | calcium_plot)/(iron_plot| zinc_plot)/(omega_plot | vitA_plot)
+dev.off()
 (ptn_plot)/ ( magnesium_plot) / (calcium_plot)/ (iron_plot)/ (zinc_plot)/(omega_plot) / (vitA_plot)
 
 # ------------------------------------------
@@ -467,14 +469,13 @@ model.anova <- lapply (unique(consumption_nutrients_day$Nutrient), function (i)
          
          filter (sea_food == "Seafood") %>%
          
-         filter (Nutrient == i) %>%
+         filter (Nutrient == i)# %>%
          
-         filter (Quantity < quantile (Quantity, 0.90)) 
+         #filter (Quantity < quantile (Quantity, 0.90)) 
        
        )
   
 )
-
 
 # anova table
 lapply (model.anova, summary)
@@ -482,7 +483,6 @@ lapply (model.anova, summary)
 # summary of results
 lapply (model.anova, function (i) summary (i$COD_FAMILY))
 lapply (model.anova, function (i) summary.lm (i$COD_FAMILY))
-
 
 
 rbind (
@@ -499,21 +499,19 @@ rbind (
 
 
 
-# all foood sources
-
-
+# all food sources
 # run model (ancova)
 model.anova.all <- lapply (unique(consumption_nutrients_day$Nutrient), function (i)
   
   aov ((Quantity)- threshold~ region+Error (COD_FAMILY),#*(sea_food),#
        #offset = (threshold),
-       data=consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
+       data= consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
          
-         filter (sea_food == "All sources") %>%
+         filter (sea_food == "All minus seafood") %>%
          
-         filter (Nutrient == i) %>%
+         filter (Nutrient == i) # %>%
          
-         filter (Quantity < quantile (Quantity, 0.90)) 
+         #filter (Quantity < quantile (Quantity, 0.90)) 
        
   )
   
@@ -542,79 +540,88 @@ rbind (
 
 
 
+# sample size in each ANOVA
+
+consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
+  
+  filter (sea_food == "Seafood") %>%
+  
+  filter (Nutrient == i) %>% select(COD_INFOR) %>% unique() %>% nrow()
+
+# all min seafood
+consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
+  
+  filter (sea_food == "All minus seafood") %>%
+  
+  filter (Nutrient == i) %>% select(COD_INFOR) %>% unique() %>% nrow()
 
 
 
+# save model results
+dir.create(here("output", "model_results"))
+save (model.anova,
+      model.anova.all,
+      file = here("output", "model_results", "model_results.RData"))
 
 
+# garbage
 
-
-
-
-
-
-
-
-
-
-
-
-
-par(mfrow=c(3,2))
-
-lapply (model.anova, plot)
-
-TukeyHSD (model.anova[[1]]$`(Intercept)`, "region")
-
-require("agricolae")
-
-HSD.test (model.anova[[1]]$Within, trt="region")
-
-# posthoc analysis
-posthoc_test <- lapply (model.anova, TukeyHSD, "region")
-
-# nutrients
-nuts <- unique(consumption_nutrients_day$Nutrient)
-plots_interaction <- lapply (seq (1,length(nuts)), function (i)
-
-  GGTukey.2(posthoc_test[[i]])+ggtitle (nuts[i]) + theme(legend.position = "none")
-
-  )
-
-# plot vit-A without interaction
-posthoc_test_vit.a_region <- TukeyHSD(model.anova[[5]], "region")
-posthoc_test_vit.a_sf <- TukeyHSD(model.ancova[[5]], "sea_food")
-plots_vita<-GGTukey.2(posthoc_test_vit.a_region)+ggtitle (nuts[5]) 
-GGTukey.2(posthoc_test_vit.a_sf)+ggtitle (nuts[5]) 
-
-# plot and save
-pdf(here ("output", "tukeyhsd_plots.pdf"),height=17,width=10)
-grid.arrange(plots_interaction[[1]]+theme(legend.position = "none",
-                                          plot.title = element_text(size=14)),
-             plots_interaction[[2]]+theme(axis.text.y =  element_blank(),
-                                          legend.position = "none",
-                                          plot.title = element_text(size=14)),
-             plots_interaction[[3]]+theme(legend.position = "none",
-                                          plot.title = element_text(size=14)),
-             plots_interaction[[4]]+theme(axis.text.y =  element_blank(),
-                                          legend.position = "none",
-                                          plot.title = element_text(size=14)),
-             plots_interaction[[6]]+theme(legend.position = "none",
-                                          plot.title = element_text(size=14)),
-             plots_interaction[[7]]+theme(axis.text.y =  element_blank(),
-                                          legend.position = "none",
-                                          plot.title = element_text(size=14)),
-             #plots_vita+theme(plot.title = element_text(size=14)),
-             plots_interaction[[5]]+theme(axis.text.y =  element_blank(),
-                                          legend.position = "right",
-                                          plot.title = element_text(size=14)),
-             
-             ncol=3,nrow=4,
-             layout_matrix = rbind (c(1,1,2),
-                                    c(3,3,4),
-                                    c(5,5,6),
-                                    c(7,7,NA))
-             
-             
-)
-dev.off()
+#par(mfrow=c(3,2))
+#
+#lapply (model.anova, plot)
+#
+#TukeyHSD (model.anova[[1]]$`(Intercept)`, "region")
+#
+#require("agricolae")
+#
+#HSD.test (model.anova[[1]]$Within, trt="region")
+#
+## posthoc analysis
+#posthoc_test <- lapply (model.anova, TukeyHSD, "region")
+#
+## nutrients
+#nuts <- unique(consumption_nutrients_day$Nutrient)
+#plots_interaction <- lapply (seq (1,length(nuts)), function (i)
+#
+#  GGTukey.2(posthoc_test[[i]])+ggtitle (nuts[i]) + theme(legend.position = "none")
+#
+#  )
+#
+## plot vit-A without interaction
+#posthoc_test_vit.a_region <- TukeyHSD(model.anova[[5]], "region")
+#posthoc_test_vit.a_sf <- TukeyHSD(model.ancova[[5]], "sea_food")
+#plots_vita<-GGTukey.2(posthoc_test_vit.a_region)+ggtitle (nuts[5]) 
+#GGTukey.2(posthoc_test_vit.a_sf)+ggtitle (nuts[5]) 
+#
+## plot and save
+#pdf(here ("output", "tukeyhsd_plots.pdf"),height=17,width=10)
+#grid.arrange(plots_interaction[[1]]+theme(legend.position = "none",
+#                                          plot.title = element_text(size=14)),
+#             plots_interaction[[2]]+theme(axis.text.y =  element_blank(),
+#                                          legend.position = "none",
+#                                          plot.title = element_text(size=14)),
+#             plots_interaction[[3]]+theme(legend.position = "none",
+#                                          plot.title = element_text(size=14)),
+#             plots_interaction[[4]]+theme(axis.text.y =  element_blank(),
+#                                          legend.position = "none",
+#                                          plot.title = element_text(size=14)),
+#             plots_interaction[[6]]+theme(legend.position = "none",
+#                                          plot.title = element_text(size=14)),
+#             plots_interaction[[7]]+theme(axis.text.y =  element_blank(),
+#                                          legend.position = "none",
+#                                          plot.title = element_text(size=14)),
+#             #plots_vita+theme(plot.title = element_text(size=14)),
+#             plots_interaction[[5]]+theme(axis.text.y =  element_blank(),
+#                                          legend.position = "right",
+#                                          plot.title = element_text(size=14)),
+#             
+#             ncol=3,nrow=4,
+#             layout_matrix = rbind (c(1,1,2),
+#                                    c(3,3,4),
+#                                    c(5,5,6),
+#                                    c(7,7,NA))
+#             
+#             
+#)
+#dev.off()
+#

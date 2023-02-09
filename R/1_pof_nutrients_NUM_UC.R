@@ -444,17 +444,20 @@ dat_state<- data.frame (int=(colSums(table (CONSUMO_ALIMENTAR$COD_INFOR ,
                                 CONSUMO_ALIMENTAR$state)>0))[order((colSums(table (CONSUMO_ALIMENTAR$COD_INFOR ,
                                                                                    CONSUMO_ALIMENTAR$state)>0)),decreasing=T)])
 dat_state$prop <- dat_state$int/length(unique(CONSUMO_ALIMENTAR$COD_INFOR ))
-(dat_state <- rbind (dat_state, 
+round(dat_state <- rbind (dat_state, 
        data.frame (int=sum(dat_state$int),
                     prop=sum(dat_state$prop))
-))
+),2)
 write.xlsx(dat_state,file = here ("output", "state_interviewees.xlsx"), rowNames=T)
 
+# number of food items
+length(unique(CONSUMO_ALIMENTAR$food_type))
+length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$single_PTN == 1)]))
+length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$sea_food == 1)]))
 
 # save  
 save (CONSUMO_ALIMENTAR, file = here ("output",
                                       "fishConsumption_Income_all_food.RData"))
-
 
 # only meat 
 CONSUMO_ALIMENTAR_MEAT <- CONSUMO_ALIMENTAR %>% 
