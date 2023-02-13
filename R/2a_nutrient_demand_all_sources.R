@@ -424,7 +424,7 @@ magnesium_plot <- consumption_nutrients_day  %>%
 magnesium_plot
 
 # arrange 
-pdf(here ("output","patchwork_nutrients.pdf"),width =8,height = 12, onefile=T)
+pdf(here ("output","patchwork_nutrients_one_per_page.pdf"),width =8,height = 12, onefile=T)
               
 lapply (list (ptn_plot,
               magnesium_plot, 
