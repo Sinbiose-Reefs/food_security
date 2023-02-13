@@ -564,6 +564,79 @@ save (model.anova,
       file = here("output", "model_results", "model_results.RData"))
 
 
+# project consumption
+informant <- unique(consumption_nutrients_day$COD_INFOR)
+d1<- split (consumption_nutrients_day %>% 
+            filter ("sea_food" != "All sources") , 
+            consumption_nutrients_day$COD_INFOR)
+
+# subset to have mixed diet seafood and other
+d2 <- lapply (d1, function (informant) 
+  
+  informant[which (informant$sea_food != "All sources"),]
+)
+# removing those that did not eat seafood
+d3 <- d2 [unlist (lapply (d2,nrow))>7]
+
+
+
+proportion <- lapply (d3, function (informant) {
+
+  d4 <- informant [informant$Nutrient == "Omega3",]
+  seaf<- d4$QTD[which (d4$sea_food == "Seafood")]/sum(d4$QTD)
+  all_food<- d4$QTD[which (d4$sea_food == "All minus seafood")]/sum(d4$QTD)
+  seaf_nut <- d4$Quantity[which (d4$sea_food == "Seafood")]/sum(d4$QTD)
+  seaf
+  #(all_food * seaf_nut)/seaf
+  #(seaf*4.39)/all_food
+  
+})
+
+mean(unlist(proportion))
+sd(unlist(proportion))
+range(unlist(proportion))*100
+
+
+
+
+
+# omega 3
+omega_plot <- do.call(rbind,d3)  %>%
+  
+  filter (Nutrient== "Omega3") %>%
+  
+  filter (Quantity < quantile (Quantity, 0.90)) %>%
+  
+  ggplot(aes (x=region,
+              y=(Quantity),
+              fill = sea_food,
+              colour=sea_food))+
+  #geom_point(position=position_jitter(width=.15),
+  #           size=.25,alpha=0.2)+
+  geom_flat_violin(position=position_nudge(x=.2,y=0),
+                   adjust=2,
+                   alpha=0.3)+
+  scale_colour_brewer(palette="Dark2",direction = -1)+
+  scale_fill_brewer(palette="Dark2",direction = -1)+
+  geom_boxplot(alpha=0.5,outlier.shape = NA)+
+  facet_wrap(~Nutrient)+
+  coord_flip()+
+  theme_cowplot()+
+  guides(fill=FALSE) +
+  ylab ("Daily per capita consumption (mg, natural  scale)") +
+  xlab ("Region")+
+  geom_hline (aes (yintercept=(threshold)),
+              color= "black",
+              size=1,
+              linetype="dashed") +
+  theme(legend.position = "none") +
+  scale_y_break(c(40, 240), expand=T,scales="fixed")
+
+omega_plot
+
+
+
+
 # garbage
 
 #par(mfrow=c(3,2))
