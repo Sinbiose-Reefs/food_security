@@ -219,7 +219,7 @@ plot_vitA<-df_nut_data %>%
 
 pdf (here ("output", "demand_supply.pdf"),width=10,height=6)
 
-grid.arrange(plot_all+ylab("Per capita kg/year (log scale)"),
+grid.arrange(plot_all+ylab("Per capita kg/year"),
              plot_zinc+theme (axis.title = element_blank()),
              plot_calcium+theme (axis.title = element_blank()),
              plot_iron+theme (axis.title = element_blank()),
