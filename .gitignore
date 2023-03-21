@@ -8,3 +8,4 @@ POF_state
 # output
 # data_fisheries_nutrients
 output/model_results
+POF_processed_data.RData
