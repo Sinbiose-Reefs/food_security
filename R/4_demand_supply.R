@@ -32,8 +32,9 @@ binded_data <- bind_cols (table_supply_state,
 # per capita landing
 binded_data <- binded_data %>%
   
-  mutate_each (funs(./npop), ends_with("kg_1")) %>% # landing of nutrients, per capita
-  mutate_each (funs(.*npop), ends_with("kg")) # state consumption
+  mutate_each (funs(./npop), ends_with("kg_1"))# %>% # landing of nutrients, per capita
+
+  #mutate_each (funs(.*npop), ends_with("kg")) # state consumption
 
 
 
@@ -83,7 +84,7 @@ plot_all <- df_nut_data %>%
   select("state_adj",contains("Catch"))  %>%
   reshape2::melt (id.vars = c("state_adj", "supply_higher_demand_catch")) %>%
   ggplot (aes (x= variable, 
-               y=(value),
+               y=log(value),
                group= state_adj,
                label = state_adj,
                col=supply_higher_demand_catch)) +
@@ -105,7 +106,7 @@ plot_zinc<-df_nut_data %>%
   select("state_adj",contains("Zinc"))  %>%
   reshape2::melt (id.vars = c("state_adj", "supply_higher_demand_zinc")) %>%
   ggplot (aes (x= variable, 
-                   y=log(value),
+                   y=(value),
                    group= state_adj,
                    col=supply_higher_demand_zinc,
                    label = state_adj)) +
@@ -126,7 +127,7 @@ plot_calcium<-df_nut_data %>%
   select("state_adj",contains("calci"))  %>%
   reshape2::melt (id.vars = c("state_adj", "supply_higher_demand_calcium")) %>%
   ggplot (aes (x= variable, 
-               y=log(value),
+               y=(value),
                group= state_adj,
                col=supply_higher_demand_calcium,
                
@@ -148,7 +149,7 @@ plot_iron<-df_nut_data %>%
   select("state_adj",contains("iron"))  %>%
   reshape2::melt (id.vars = c("state_adj", "supply_higher_demand_iron")) %>%
   ggplot (aes (x= variable, 
-               y=log(value),
+               y=(value),
                group= state_adj,
                col=supply_higher_demand_iron,
                label = state_adj)) +
@@ -170,7 +171,7 @@ plot_omega3<-df_nut_data %>%
   select("state_adj",contains(c("omega", "poly")))  %>%
   reshape2::melt (id.vars = c("state_adj", "supply_higher_demand_omega3")) %>%
   ggplot (aes (x= variable, 
-               y=log(value),
+               y=(value),
                group= state_adj,
                col=supply_higher_demand_omega3,
                label = state_adj)) +
@@ -191,7 +192,7 @@ plot_vitA<-df_nut_data %>%
   select("state_adj",contains("vita"))  %>%
   reshape2::melt (id.vars = c("state_adj", "supply_higher_demand_vitaA")) %>%
   ggplot (aes (x= variable, 
-               y=log(value),
+               y=(value),
                group= state_adj,
                col=supply_higher_demand_vitaA,
                label = state_adj)) +
