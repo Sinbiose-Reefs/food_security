@@ -1,18 +1,15 @@
 
 
-require("here")
-require(dplyr)
-require(ggplot2)
-require(reshape)
-require(reshape2)
-require(tidyr)
-library(sf)
-library(tidyverse)
-library(ggrepel)
-library(scatterpie)
-library (gridExtra)
-require(cowplot)
-require("ggbreak")
+# --------------------------------------------
+
+# projections and comparison with FAOs recommendations
+
+# --------------------------------------------
+
+
+require("here");require(dplyr);require(ggplot2);require(reshape);require(reshape2);
+require(tidyr);library(sf);library(tidyverse);library(ggrepel);library(scatterpie);
+library (gridExtra);require(cowplot);require("ggbreak")
 
 # load functions
 source ("R/functions.R")
@@ -30,11 +27,11 @@ load (here ("output",
 # filter the food
 filter_interesting_food <- CONSUMO_ALIMENTAR %>% 
   #filter (single_PTN == 1) %>% # seafood & only raw protein
-  mutate_at("sea_food", ~replace_na(.,0)) 
+  mutate_at("sea_food", ~replace_na(.,0))  %>% 
+  filter (position == "sea")
 
 
-# plots without the maps
-# with FAO's thresholds
+# load data - FAO's recommendations
 FAO_threshold <- openxlsx::read.xlsx (here ("data_fisheries_nutrients", "Threshold_FAO.xlsx"))
 
 # unique(filter_interesting_food [which (filter_interesting_food$COD_INFOR == "15_1514_2_150036787_15_1_2"),"DIA_SEMANA"])
@@ -564,6 +561,8 @@ save (model.anova,
       file = here("output", "model_results", "model_results.RData"))
 
 
+# --------------------------------
+
 # project consumption
 informant <- unique(consumption_nutrients_day$COD_INFOR)
 d1<- split (consumption_nutrients_day %>% 
@@ -574,7 +573,9 @@ d1<- split (consumption_nutrients_day %>%
 d2 <- lapply (d1, function (informant) 
   
   informant[which (informant$sea_food != "All sources"),]
+  
 )
+
 # removing those that did not eat seafood
 d3 <- d2 [unlist (lapply (d2,nrow))>7]
 
@@ -597,42 +598,126 @@ sd(unlist(proportion))
 range(unlist(proportion))*100
 
 
+# nutrients
+nut <- unique(consumption_nutrients_day$Nutrient)
 
-
-
-# omega 3
-omega_plot <- do.call(rbind,d3)  %>%
+prop_FAO<- lapply (nut, function (nut) 
   
-  filter (Nutrient== "Omega3") %>%
-  
-  filter (Quantity < quantile (Quantity, 0.90)) %>%
-  
-  ggplot(aes (x=region,
-              y=(Quantity),
-              fill = sea_food,
-              colour=sea_food))+
-  #geom_point(position=position_jitter(width=.15),
-  #           size=.25,alpha=0.2)+
-  geom_flat_violin(position=position_nudge(x=.2,y=0),
-                   adjust=2,
-                   alpha=0.3)+
-  scale_colour_brewer(palette="Dark2",direction = -1)+
-  scale_fill_brewer(palette="Dark2",direction = -1)+
-  geom_boxplot(alpha=0.5,outlier.shape = NA)+
-  facet_wrap(~Nutrient)+
-  coord_flip()+
-  theme_cowplot()+
-  guides(fill=FALSE) +
-  ylab ("Daily per capita consumption (mg, natural  scale)") +
-  xlab ("Region")+
-  geom_hline (aes (yintercept=(threshold)),
-              color= "black",
-              size=1,
-              linetype="dashed") +
-  theme(legend.position = "none") +
-  scale_y_break(c(40, 240), expand=T,scales="fixed")
+  lapply (d3, function (informant) {
 
-omega_plot
+        # subset
+        d4 <- informant [informant$Nutrient == nut,] # nut == one nutrient
+        # seafood
+        seaf<- d4$QTD[which (d4$sea_food == "Seafood")]/sum(d4$QTD) # proportion of seafood in the diet
+        seaf_nut <- d4$Quantity[which (d4$sea_food == "Seafood")] # seafood nutrient intake 
+        seaf_quantity <- d4$QTD[which (d4$sea_food == "Seafood")] # daily quantity of seafood
+        # proportion to achieve FAO's recommendations
+        proportion_FAO <- seaf * FAO_threshold$threshold[which(FAO_threshold$Nutrient %in% d4$Nutrient)]/seaf_nut
+        
+        # all other sources
+        # all_food<- d4$QTD[which (d4$sea_food == "All minus seafood")]/sum(d4$QTD)# proportion of remaining food
+        all_sf<- d4$QTD[which (d4$sea_food == "All minus seafood")]/sum(d4$QTD) # proportion of seafood in the diet
+        all_nut <- d4$Quantity[which (d4$sea_food == "All minus seafood")] # seafood nutrient intake 
+        all_quantity <- d4$QTD[which (d4$sea_food == "All minus seafood")] # daily quantity of seafood
+        # proportion to achieve FAO's recommendations
+        proportion_FAO_all <- all_sf * FAO_threshold$threshold[which(FAO_threshold$Nutrient %in% d4$Nutrient)]/all_nut
+        
+        # dataframe
+        # seafood
+        df_seafood <- data.frame (proportion = as.numeric(seaf),
+                          prop_to_achive = as.numeric(proportion_FAO),
+                          already_meet = seaf>=proportion_FAO,
+                          prop = as.numeric(proportion_FAO/seaf),
+                          threshold = FAO_threshold$threshold[which(FAO_threshold$Nutrient %in% d4$Nutrient)],
+                          nutrient = nut,
+                          quantity=seaf_quantity,
+                          type = "seafood"
+                          
+                          )
+        # all food
+        df_all_minus <- data.frame (proportion = as.numeric(all_sf),
+                                    prop_to_achive = as.numeric(proportion_FAO_all),
+                                    already_meet = all_sf>=proportion_FAO_all,
+                                    prop = as.numeric(proportion_FAO_all/all_sf),
+                                    threshold = FAO_threshold$threshold[which(FAO_threshold$Nutrient %in% d4$Nutrient)],
+                                    nutrient = nut,
+                                    quantity=all_quantity,
+                                    type = "all_minus_seafood")
+        
+        res <- rbind (df_seafood,
+                     df_all_minus)
+        ;
+        res
+}))
+
+
+# melt into df
+df_prop_FAO <- lapply (prop_FAO, function (i)
+  do.call(rbind,i)
+)
+df_prop_FAO <- do.call(rbind,df_prop_FAO)
+
+# plot
+tot_prop <- df_prop_FAO %>% 
+  filter (nutrient == "Calcium") %>%
+  ggplot (aes (x=log(prop),fill=type)) +
+  geom_density(alpha=0.5) + 
+  theme_bw() +
+  geom_vline(aes(xintercept=median(log(prop)),group=type),linetype=2)
+
+# proportion
+df_prop_FAO %>%
+  filter (nutrient == "PTN") %>% 
+  group_by(type) %>%
+  summarise(median(proportion))
+
+# grams
+df_prop_FAO %>%
+  filter (nutrient == "PTN") %>% 
+  group_by(type) %>%
+  summarise(median(quantity))
+
+
+# each nutr
+each_nut <- lapply (nut, function (nut)
+  
+  df_prop_FAO %>%
+
+    filter (nutrient == nut) %>%
+    filter (prop != "Inf") %>%
+  ggplot (aes (x=log(prop),
+               fill = type,
+               col=type)) +
+  geom_vline(data = df_prop_FAO %>%
+               
+               filter (nutrient == nut) %>%
+               filter (prop != "Inf") %>%
+               group_by(type) %>%
+               summarize (prop=median(prop,na.rm=T)),
+               
+               aes(xintercept=(log(prop))),
+             linetype=2)+theme_bw()+
+  geom_density(alpha=0.5) +
+    
+    facet_wrap(~nutrient) 
+  
+)
+
+
+# arrange
+pdf (here ("output", "proportionFAO.pdf"),width = 7,height=4)
+grid.arrange(each_nut[[1]],each_nut[[2]],
+             each_nut[[3]],each_nut[[4]],
+             each_nut[[5]],each_nut[[6]],
+             each_nut[[7]],ncol=4)
+dev.off()
+
+class(df_prop_FAO$prop)
+
+df_prop_FAO %>%
+  filter (prop != "Inf") %>%
+  group_by(nutrient,type) %>%
+  summarize (median (prop,na.rm=T)) 
 
 
 
