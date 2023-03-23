@@ -3,9 +3,14 @@
 .RData
 .Ruserdata
 POF_raw
-POF_government
-POF_state
-# output
-# data_fisheries_nutrients
+POF_government/Dados_20210304
+POF_government/Documentacao_20210423
+POF_government/Memoria_de_Calculo_20210304
+POF_government/Programas_de_Leitura_20210304
+POF_government/Tradutores_20210304
+POF_government/RawData
+POF_state/*.pdf
+POF_state/*.zip
+POF_state/tabelas_unidades_da_federacao_xls_20191108
 output/model_results
-POF_processed_data.RData
+
