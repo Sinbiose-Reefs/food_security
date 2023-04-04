@@ -588,7 +588,7 @@ consumption_nutrients <-  filter_interesting_food %>%
           COD_INFOR,
           COD_FAMILY,
           DIA_SEMANA,
-          N_pop_class, 
+          N_pop_state, 
           Ndays,
           bluefood,
           sea_food,
@@ -604,7 +604,7 @@ consumption_nutrients <-  filter_interesting_food %>%
   # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
   group_by(state,income_cat,COD_INFOR) %>%  # summarize by person
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
-            mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
+            mean_N_pop = mean(N_pop_state,na.rm=T), # N per pop class
             Ninterv = n_distinct(COD_INFOR),
             Ndays = mean(Ndays)) %>% #, # N interview days
   # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
