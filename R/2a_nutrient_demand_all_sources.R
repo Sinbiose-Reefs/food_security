@@ -34,10 +34,6 @@ filter_interesting_food <- CONSUMO_ALIMENTAR %>%
 # load data - FAO's recommendations
 FAO_threshold <- openxlsx::read.xlsx (here ("data_fisheries_nutrients", "Threshold_FAO.xlsx"))
 
-# unique(filter_interesting_food [which (filter_interesting_food$COD_INFOR == "15_1514_2_150036787_15_1_2"),"DIA_SEMANA"])
-# (consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "15_1514_2_150036787_15_1_2"), "Ndays"] )
-View(consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "25_2501_1_250057870_5_1_1"), ] )
-
 # filter the days
 consumption_nutrients_day <- filter_interesting_food %>%
   arrange(state)%>% # ordering states
@@ -48,7 +44,7 @@ consumption_nutrients_day <- filter_interesting_food %>%
           COD_INFOR,
           COD_FAMILY,
           DIA_SEMANA,
-          N_pop_class, 
+          N_pop_state, 
           Ndays,
           sea_food,
           QTD, 
@@ -72,7 +68,7 @@ consumption_nutrients_day <- filter_interesting_food %>%
   
   group_by(region,state,income_cat,sea_food, COD_FAMILY,COD_INFOR) %>%  # summarize by person
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
-            mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
+            mean_N_pop = mean(N_pop_state,na.rm=T), # N per pop class
             Ninterv = n_distinct(COD_INFOR),
             Ndays = mean(Ndays)) %>% # 
   
@@ -88,6 +84,10 @@ consumption_nutrients_day <- filter_interesting_food %>%
   # remove NAs
   filter (is.na (Nutrient) != T )
   
+# unique(filter_interesting_food [which (filter_interesting_food$COD_INFOR == "15_1514_2_150036787_15_1_2"),"DIA_SEMANA"])
+# (consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "15_1514_2_150036787_15_1_2"), "Ndays"] )
+View(consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "25_2501_1_250057870_5_1_1"), ] )
+
 
 # all nutrients ()
 consumption_nutrients_day_all <- filter_interesting_food %>%
@@ -99,7 +99,7 @@ consumption_nutrients_day_all <- filter_interesting_food %>%
           COD_INFOR,
           COD_FAMILY,
           DIA_SEMANA,
-          N_pop_class, 
+          N_pop_state, 
           Ndays,
           sea_food,
           QTD, 
@@ -122,7 +122,7 @@ consumption_nutrients_day_all <- filter_interesting_food %>%
   
   group_by(region,state,income_cat,sea_food, COD_FAMILY,COD_INFOR) %>%  # summarize by person
   summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
-            mean_N_pop = mean(N_pop_class,na.rm=T), # N per pop class
+            mean_N_pop = mean(N_pop_state,na.rm=T), # N per pop class
             Ninterv = n_distinct(COD_INFOR),
             Ndays = mean(Ndays)) %>% # 
   
@@ -161,6 +161,10 @@ consumption_nutrients_day$sea_food <- factor (consumption_nutrients_day$sea_food
                                                        "All minus seafood",
                                                        "Seafood"))
 
+# remove all sources
+consumption_nutrients_day <- consumption_nutrients_day %>%
+  filter (sea_food != "All sources")
+
 # plots with breaks
 # protein
 ptn_plot <- consumption_nutrients_day %>% 
@@ -193,7 +197,7 @@ ptn_plot <- consumption_nutrients_day %>%
               linetype="dashed") +
   theme(legend.position = "right",
         axis.title.x = element_blank()) +
-  scale_y_break(c(600, 900), expand=T,scales="fixed")
+  scale_y_break(c(300, 500), expand=T,scales="fixed")
 
 ptn_plot
 
@@ -230,7 +234,7 @@ zinc_plot <- consumption_nutrients_day  %>%
   theme(legend.position = "none",
         axis.title = element_blank(),
         axis.text.y = element_blank()) +
-  scale_y_break(c(40, 75), expand=T,scales="fixed")
+  scale_y_break(c(30, 50), expand=T,scales="fixed")
   
 zinc_plot
 
@@ -343,7 +347,7 @@ omega_plot <- consumption_nutrients_day  %>%
               size=1,
               linetype="dashed") +
   theme(legend.position = "none") +
-  scale_y_break(c(40, 240), expand=T,scales="fixed")
+  scale_y_break(c(30, 50), expand=T,scales="fixed")
 
 omega_plot
 
@@ -474,14 +478,27 @@ model.anova <- lapply (unique(consumption_nutrients_day$Nutrient), function (i)
   
 )
 
+# format output table
 # anova table
-lapply (model.anova, summary)
+formated_output1<- lapply (model.anova, function (i) {
+    
+   # extract error within and between
+    error_between <- summary(i)[[1]][[1]]
+    error_within <- summary(i)[[2]][[1]]
+    
+    df_output <- rbind (error_between,
+                        error_within)
+    rownames (df_output) <- c("Region", "Blocks", "Error (Within)")
+    # add total
+    df_total <- t(data.frame (Total=colSums(df_output)))
+    df_output <- rbind (df_output,
+                        df_total)  ;
+    df_output
+})
+# set names
+names(formated_output1) <- unique(consumption_nutrients_day$Nutrient)
 
-# summary of results
-lapply (model.anova, function (i) summary (i$COD_FAMILY))
-lapply (model.anova, function (i) summary.lm (i$COD_FAMILY))
-
-
+# contrasts and comparisons to the intercept
 rbind (
     # intercepts
     do.call(cbind, 
@@ -493,7 +510,25 @@ rbind (
     )
 )
 
+# error
+rbind (
+  # intercepts
+  do.call(cbind, 
+          lapply (model.anova, function (i) coef(summary.lm(i$`(Intercept)`))[, "Std. Error"])
+  ),
+  # coefficients
+  do.call(cbind, 
+          lapply (model.anova, function (i) coef(summary.lm(i$COD_FAMILY))[, "Std. Error"])
+  )
+)
 
+
+
+
+dir.create(here("output", "model_results"))
+# save
+save (model.anova,
+      file = here("output", "model_results", "model.anova.RData"))
 
 
 # all food sources
@@ -514,16 +549,27 @@ model.anova.all <- lapply (unique(consumption_nutrients_day$Nutrient), function 
   
 )
 
-
+# format output table
 # anova table
-lapply (model.anova.all, summary)
+formated_output2<- lapply (model.anova.all, function (i) {
+  
+  # extract error within and between
+  error_between <- summary(i)[[1]][[1]]
+  error_within <- summary(i)[[2]][[1]]
+  
+  df_output <- rbind (error_between,
+                      error_within)
+  rownames (df_output) <- c("Region", "Blocks", "Error (Within)")
+  # add total
+  df_total <- t(data.frame (Total=colSums(df_output)))
+  df_output <- rbind (df_output,
+                      df_total)  ;
+  df_output
+})
+# set names
+names(formated_output2) <- unique(consumption_nutrients_day$Nutrient)
 
-# summary of results
-lapply (model.anova.all, function (i) summary (i$COD_FAMILY))
-lapply (model.anova.all, function (i) summary.lm (i$COD_FAMILY))
-
-
-
+# constrast and comparisons
 rbind (
   # intercepts
   do.call(cbind, 
@@ -535,6 +581,19 @@ rbind (
   )
 )
 
+# error
+rbind (
+  # intercepts
+  do.call(cbind, 
+          lapply (model.anova.all, function (i) coef(summary.lm(i$`(Intercept)`))[, "Std. Error"])
+  ),
+  # coefficients
+  do.call(cbind, 
+          lapply (model.anova.all, function (i) coef(summary.lm(i$COD_FAMILY))[, "Std. Error"])
+  )
+)
+
+
 
 
 # sample size in each ANOVA
@@ -543,22 +602,22 @@ consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
   
   filter (sea_food == "Seafood") %>%
   
-  filter (Nutrient == i) %>% select(COD_INFOR) %>% unique() %>% nrow()
+  filter (Nutrient == "PTN") %>% select(COD_INFOR) %>% unique() %>% nrow()
+
+
 
 # all min seafood
 consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
   
   filter (sea_food == "All minus seafood") %>%
   
-  filter (Nutrient == i) %>% select(COD_INFOR) %>% unique() %>% nrow()
+  filter (Nutrient == "PTN") %>% select(COD_INFOR) %>% unique() %>% nrow()
 
 
 
 # save model results
-dir.create(here("output", "model_results"))
-save (model.anova,
-      model.anova.all,
-      file = here("output", "model_results", "model_results.RData"))
+save (model.anova.all,
+      file = here("output", "model_results", "model.anova.all.RData"))
 
 
 # --------------------------------
@@ -666,17 +725,48 @@ tot_prop <- df_prop_FAO %>%
   geom_vline(aes(xintercept=median(log(prop)),group=type),linetype=2)
 
 # proportion
+# mean
+df_prop_FAO %>%
+  filter (nutrient == "PTN") %>% 
+  group_by(type) %>%
+  summarise(mean(proportion))
+# median
 df_prop_FAO %>%
   filter (nutrient == "PTN") %>% 
   group_by(type) %>%
   summarise(median(proportion))
+# sd
+df_prop_FAO %>%
+  filter (nutrient == "PTN") %>% 
+  group_by(type) %>%
+  summarise(sd(proportion))
+# range
+df_prop_FAO %>%
+  filter (nutrient == "PTN") %>% 
+  group_by(type) %>%
+  summarise(range(proportion))
 
 # grams
+# mean
+df_prop_FAO %>%
+  filter (nutrient == "PTN") %>% 
+  group_by(type) %>%
+  summarise(mean(quantity))
+# median
 df_prop_FAO %>%
   filter (nutrient == "PTN") %>% 
   group_by(type) %>%
   summarise(median(quantity))
-
+# sd
+df_prop_FAO %>%
+  filter (nutrient == "PTN") %>% 
+  group_by(type) %>%
+  summarise(sd(quantity))
+# sd
+df_prop_FAO %>%
+  filter (nutrient == "PTN") %>% 
+  group_by(type) %>%
+  summarise(range(quantity))
 
 # each nutr
 each_nut <- lapply (nut, function (nut)
@@ -697,6 +787,7 @@ each_nut <- lapply (nut, function (nut)
                
                aes(xintercept=(log(prop))),
              linetype=2)+theme_bw()+
+    theme(legend.position = "none")+
   geom_density(alpha=0.5) +
     
     facet_wrap(~nutrient) 
