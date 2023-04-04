@@ -445,6 +445,12 @@ consumption_nutrients <- consumption_nutrients %>%
   mutate_at(vars (sum_seafood_kg:sum_magn_kg), funs(. / nint))   # per capita amounts
 
 
+# averages
+mean(consumption_nutrients$sum_seafood_kg)
+sd(consumption_nutrients$sum_seafood_kg)
+
+consumption_nutrients %>%
+  arrange(sum_seafood_kg)
 
 # save
 save (consumption_nutrients, file = here ("output", "consumption_nutrients.RData"))
