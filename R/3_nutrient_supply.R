@@ -550,7 +550,7 @@ fish_genus_region <- lapply (seq (1,ncol(fish_genus_region)), function (i){
 
 # list most catched spp
 most_catched_list <- (sapply (fish_genus_region, "[[", "spp_catch",simplify=F))
-names(most_catched_list) <- c("North","Northeast", "Southeast", "South")
+names(most_catched_list) <- c("Northeast","North", "Southeast", "South")
 
 # table of names
 
@@ -566,7 +566,6 @@ tab_names <- lapply (most_catched_list, function (i)
 
 # melt
 tab_names<-do.call(rbind, tab_names)
-
 tab_names<-cbind (tab_names,
        fisheries_wtrait [match (tab_names$Species_taxon,
                          fisheries_wtrait$TaxonName),c("class","family")])
@@ -735,8 +734,8 @@ ordination_nut <- lapply(genus_nutrient_composition, function (i) {
 
 pdf (here ("output", "nutrients_composition.pdf"),height=6,width=6)
 
-composition2<-grid.arrange(ordination_nut[[1]]+ggtitle ("North"),
-                           ordination_nut[[2]]+ggtitle ("Northeast"),
+composition2<-grid.arrange(ordination_nut[[1]]+ggtitle ("Northeast"),
+                           ordination_nut[[2]]+ggtitle ("North"),
                            ordination_nut[[3]]+ggtitle ("Southeast"),
                            ordination_nut[[4]]+ggtitle ("South"),
                            ncol=4,nrow=4,
