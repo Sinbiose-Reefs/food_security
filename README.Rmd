@@ -1,0 +1,40 @@
+---
+title: "Food beyond land: seafood contribution to human nutrition in Brazil"
+author: "Maria Luiza Gallina, ReefSynthesis Working Group"
+date: "2023-04-27"
+output: github_document
+---
+
+
+
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+Repository containing the data and scripts used in the article "Food beyond land: seafood contribution to human nutrition in Brazil", to be submitted to Current Biology.
+
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+
+#### This paper was produced using the following software and associated packages:
+
+```{r pressure, echo=F,warning=F,message=F}
+
+source("R/packages.R")
+sessionInfo()
+
+
+```
+
