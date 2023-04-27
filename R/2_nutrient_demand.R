@@ -2,16 +2,13 @@
 
 # ------------------------------------------- # 
 
-# explore the patterns of consumption across states
+# Explore the patterns of consumption across states
 
 # ------------------------------------------- # 
 
 
 # load packages
-
-require("here");require(dplyr);require(ggplot2);require(reshape);require(reshape2);require(tidyr);library(sf);
-library(tidyverse);library(ggrepel);library(scatterpie);library (gridExtra);library(viridis)
-
+source("R/packages.R")
 
 # load functions
 source ("R/functions.R")
@@ -578,68 +575,4 @@ ggsave(map_BR_bluefood, file=here ('output',"map_consumption_bluefood.pdf"),
 ggsave(p, file=here ('output',"circular_plot.pdf"), 
        width=10, height=10,bg="white")
 
-
-
-
-# ------------------------------------------------------------------
- # garbage
-
-
-# filter the days
-consumption_nutrients <-  filter_interesting_food %>%
-  arrange(state)%>% # ordering states
-  select (region,
-          state,
-          income_cat,
-          COD_INFOR,
-          COD_FAMILY,
-          DIA_SEMANA,
-          N_pop_state, 
-          Ndays,
-          bluefood,
-          sea_food,
-          QTD, 
-          ENERGIA_KCAL,
-          PTN,
-          Calcium, 
-          Iron, 
-          Zinc, 
-          `Vitamin-A`, 
-          Omega3,
-          Magnesium) %>% # select  variables (nutrients) to test
-  # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
-  group_by(state,income_cat,COD_INFOR) %>%  # summarize by person
-  summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
-            mean_N_pop = mean(N_pop_state,na.rm=T), # N per pop class
-            Ninterv = n_distinct(COD_INFOR),
-            Ndays = mean(Ndays)) %>% #, # N interview days
-  # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
-  # quantity proportional to the number of days
-  mutate_at(vars (QTD:Magnesium), funs(. / Ndays)) %>% 
-  # transform into kg
-  mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
-          mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
-          Ninterv = sum (Ninterv,na.rm=T)) %>% # N interviewers
-  
-  group_by(state,income_cat) %>% # further group by state and class (summarize individual consumption)
-  summarise(across (ends_with("_kg"), ~mean(.x,na.rm=T)) , # per capita consumption in kg (mean across interviewees)
-            mean_N_pop = mean(mean_N_pop,na.rm=T),
-            Ninterv = mean (Ninterv,na.rm=T)
-  ) %>%
-  complete(income_cat) %>% # keep all levels
-  mutate_at(c("Calcium_kg",
-              "Iron_kg",
-              "Zinc_kg",
-              "Vitamin-A_kg",
-              "Omega3_kg",
-              "Magnesium_kg"), ~replace_na(.,NA)) %>% # replace_na(.,0)
-  mutate(state_adj = recode(state, "Mato Grosso do Sul" = "Mato Grosso Do Sul",
-                            "Rio de Janeiro" = "Rio De Janeiro",
-                            "Rio Grande do Norte" = "Rio Grande Do Norte",
-                            "Espírito Santo" ="Espirito Santo"),
-         sum_consumpt = Calcium_kg +Iron_kg+Zinc_kg+ `Vitamin-A_kg`+ Omega3_kg
-  ) #%>%
-#mutate (kg_consumed = mean_year_cons_kg*mean_N_pop) %>%
-#mutate_each (funs(.*mean_N_pop), ends_with("kg"))  %>% # extrapolate to all people
-#mutate_each (funs(./Ninterv), ends_with("kg"))  # per capita consumption
 

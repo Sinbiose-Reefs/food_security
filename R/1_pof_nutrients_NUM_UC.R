@@ -1,6 +1,6 @@
 # organize data to analyses
 
-require(here); library(dplyr); require(readxl); require(openxlsx); require(reshape)
+source("R/packages.R")
 
 # load data
 load ( "POF_processed_data.RData")
@@ -27,7 +27,6 @@ length(unique(MORADOR$COD_INFOR  ))
 
 
 ## create an identified to each unit
-
 CONSUMO_ALIMENTAR$COD_INFOR  <- paste(CONSUMO_ALIMENTAR$UF,
                                          CONSUMO_ALIMENTAR$ESTRATO_POF,
                                          CONSUMO_ALIMENTAR$TIPO_SITUACAO_REG,
@@ -101,7 +100,12 @@ CONSUMO_ALIMENTAR$single_PTN <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
 CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
                                  MORADOR[match (CONSUMO_ALIMENTAR$COD_INFOR ,
                                                 MORADOR$COD_INFOR ),
-                                          c("PC_RENDA_DISP","PC_RENDA_MONET", "COMPOSICAO","RENDA_TOTAL", "V0404", "V0405")])
+                                          c("PC_RENDA_DISP",
+                                            "PC_RENDA_MONET", 
+                                            "COMPOSICAO",
+                                            "RENDA_TOTAL",
+                                            "V0404", 
+                                            "V0405")])
 
 
 # change colnames
@@ -163,26 +167,34 @@ CONSUMO_ALIMENTAR$state <- ((df_states [match (CONSUMO_ALIMENTAR$UF,
 # load PIB data to match PIB, region and position
 
 PIB <- read.csv(here ("POF_state", 
-                      'Pib_BR.csv'),sep=";")
+                      'Pib_BR.csv'),
+                sep=";")
 
 
 # match to find 
-
 CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
                           PIB[match (CONSUMO_ALIMENTAR$UF, PIB$cod_uf),
                                                       c("position", "region")])
 
 
 
-# remove NAs
-# CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR [is.na(CONSUMO_ALIMENTAR$protein_type)!= T,]
 
 
 # discretisize income
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>% 
-  mutate (income_cat = cut(PC_RENDA_MONET,breaks = c(-1,1891,3782,9455,18910,200000), # classes
-                         labels = c("Class E", "Class D", "Class C", "Class B", "Class A")))  %>%
-  filter (is.na(PC_RENDA_MONET) != T)
+  mutate (income_cat = cut(PC_RENDA_MONET,breaks = c(-1,
+                                                     1891,
+                                                     3782,
+                                                     9455,
+                                                     18910,
+                                                     200000), # classes
+                                         labels = c("Class E", 
+                                                    "Class D", 
+                                                    "Class C", 
+                                                    "Class B", 
+                                                    "Class A")))  %>%
+  
+                  filter (is.na(PC_RENDA_MONET) != T) # remove missing classes
   
 # load population size data
 library("readxl")
@@ -226,99 +238,6 @@ df_population <- data.frame (state = state_population_2018$state_adj,
 CONSUMO_ALIMENTAR$N_pop_state  <-  df_population$N_pop [match (CONSUMO_ALIMENTAR$state, df_population$state)]
 
 
-## percentage of each class per State
-#class_state<- read.csv (here ("POF_government", "Classes_municipios.csv"),
-#                        encoding = "UTF-8") 
-#class_state <- (class_state [which(class_state$Unidade == "pessoas"),]) # selection N 
-## income descriptors
-#class_state <- class_state [grep ("salário",class_state$Nome),]
-## descriptor for total income
-#class_state<-(class_state [grep ("17.2.1", class_state$Posição),])
-## the dimension we want == N income classes x N states
-#length(unique(class_state$Nome)) * length(unique(class_state$Localidade))
-#dim(class_state)
-#
-## recode according to the class and income
-#class_state$Nome<-  recode(class_state$Nome, 
-#       "Até 1/4 de salário mínimo"   = "Class E",
-#       "Mais de 1/4 a 1/2 salário mínimo"= "Class E",
-#       "Mais de 1/2 a 1 salário mínimo"  = "Class E",
-#       "Mais de 1 a 2 salários mínimos"  = "Class E",
-#       "Mais de 2 a 3 salários mínimos"   = "Class D",
-#       "Mais de 3 a 5 salários mínimos"  = "Class D",
-#       "Mais de 5 a 10 salários mínimos" = "Class C",
-#       "Mais de 10 a 15 salários mínimos"  = "Class B",
-#       "Mais de 15 a 20 salários mínimos" = "Class B",
-#       "Mais de 20 a 30 salários mínimos"  = "Class A",
-#       "Mais de 30 salários mínimos"  = "Class A"
-#)
-#
-## numeric
-#class_state$N_pop <- as.numeric(class_state$X2010)
-#
-#
-#sum(class_state[which(class_state$Localidade == "São Paulo"),"N_pop"])
-#
-## table o population per class and state
-#tab_N_class_state <- (cast (data = class_state, 
-#      formula = Localidade ~ Nome,
-#      value="N_pop",
-#      drop=F,
-#      fun.aggregate = sum))
-#
-## melt
-#tab_N_class_state_df <- melt(tab_N_class_state, id.vars = "Localidade")
-#tab_N_class_state_df$Localidade [which(tab_N_class_state_df$Localidade == "Rio Grande do Sul")] <- "Rio Grande Do Sul" # adjust name
-#
-## table proportion per class
-#tab_prop_class_state <- (cast (data = class_state, 
-#                            formula = Localidade ~ Nome,
-#                            value="N_pop",
-#                            fun.aggregate = sum))
-#tab_prop_class_state[,c("Class A","Class B","Class C","Class D","Class E")] <- tab_prop_class_state[,c("Class A","Class B","Class C","Class D","Class E")]/rowSums(tab_prop_class_state[,c("Class A","Class B","Class C","Class D","Class E")])
-#
-#
-## melt
-#tab_prop_class_state_df <- melt(tab_prop_class_state, 
-#                                id.vars = "Localidade")
-#tab_prop_class_state_df$Localidade [which(tab_prop_class_state_df$Localidade == "Rio Grande do Sul")] <- "Rio Grande Do Sul"
-#
-#
-## match with the complete dataset
-#tab_N_class_state_df$interact_state_class <- paste (tab_N_class_state_df$Localidade, 
-#                                                    tab_N_class_state_df$variable,sep=".")
-#tab_prop_class_state_df$interact_state_class<- paste (tab_prop_class_state_df$Localidade, 
-#                                                      tab_prop_class_state_df$variable,sep=".")
-#CONSUMO_ALIMENTAR$interact_state_class <- paste (CONSUMO_ALIMENTAR$state, 
-#                                                 CONSUMO_ALIMENTAR$income_cat,sep=".")
-#
-## POF data did not have all combinations of class and state
-#length(unique(tab_prop_class_state_df$interact_state_class))
-#length(unique(CONSUMO_ALIMENTAR$interact_state_class))
-#
-## match -- some zeros will appear in the final table
-## total N
-#CONSUMO_ALIMENTAR$N_pop_class <- tab_N_class_state_df [match(CONSUMO_ALIMENTAR$interact_state_class,
-#                                                             tab_N_class_state_df$interact_state_class),
-#                                                       "value"]
-## proportions
-#CONSUMO_ALIMENTAR$proportion_pop_class <- tab_prop_class_state_df [match(CONSUMO_ALIMENTAR$interact_state_class,
-#                                                                         tab_prop_class_state_df$interact_state_class),
-#                                                                   "value"]
-#
-# 
-## check
-### NAs are due to missing samples in POF
-#cast (CONSUMO_ALIMENTAR, formula = state~income_cat,
-#      fun.aggregate = mean,
-#      na.rm=T,
-#      drop=F,
-#      value= "N_pop_class")
-#
-#
-#
-#
-
 # examples : inf - levels that did not exist in data 
 which(CONSUMO_ALIMENTAR$state == "Alagoas" & CONSUMO_ALIMENTAR$income_cat == "Class A")
 
@@ -358,11 +277,7 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
                 "Iron" = FERRO,
                 "Zinc" = ZINCO,
                 "Vitamin-A" = VITA_RAE,
-                "Magnesium" = MAGNESIO)# %>% 
-  #filter (position == "sea") #& 
-            #general_type != "DD")
-
-
+                "Magnesium" = MAGNESIO)
 
 # factor bluefood
 
@@ -371,7 +286,7 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>%
   mutate(general_type, bluefood=ifelse (general_type %in% c("Seafood","Freshwater fish",
                                                             "Imported fish"),
                                         "Bluefood",
-                                        "RedMeat"))
+                                        "RedMeat/Other"))
 
 
 # bind the number of interview days
@@ -414,10 +329,17 @@ round(dat_state <- rbind (dat_state,
 ),2)
 write.xlsx(dat_state,file = here ("output", "state_interviewees.xlsx"), rowNames=T)
 
+# families
+length(unique(CONSUMO_ALIMENTAR$COD_INFOR))
+length(unique(CONSUMO_ALIMENTAR$COD_FAMILY))
+
 # number of food items
 length(unique(CONSUMO_ALIMENTAR$food_type))
+length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$bluefood == "RedMeat/Other")]))
+length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$bluefood == "Bluefood")]))
 length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$single_PTN == 1)]))
-length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$sea_food == 1)]))
+length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$single_PTN == 1 & 
+                                                   CONSUMO_ALIMENTAR$sea_food == 1)]))
 
 # save  
 save (CONSUMO_ALIMENTAR, file = here ("output",

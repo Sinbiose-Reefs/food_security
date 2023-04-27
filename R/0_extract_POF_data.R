@@ -1,6 +1,7 @@
 # POF data ( too heavy; load --> process --> save)
 
-require(here); library(dplyr); require(readxl); require(openxlsx); require(reshape)
+source("R/packages.R")
+
 
 # REGISTRO - MORADOR
 # PS: already saved as RData

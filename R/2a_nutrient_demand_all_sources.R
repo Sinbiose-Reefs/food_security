@@ -7,9 +7,7 @@
 # --------------------------------------------
 
 
-require("here");require(dplyr);require(ggplot2);require(reshape);require(reshape2);
-require(tidyr);library(sf);library(tidyverse);library(ggrepel);library(scatterpie);
-library (gridExtra);require(cowplot);require("ggbreak")
+source("R/packages.R")
 
 # load functions
 source ("R/functions.R")
@@ -83,10 +81,11 @@ consumption_nutrients_day <- filter_interesting_food %>%
   right_join(FAO_threshold) %>%
   # remove NAs
   filter (is.na (Nutrient) != T )
-  
+
+# checks  
 # unique(filter_interesting_food [which (filter_interesting_food$COD_INFOR == "15_1514_2_150036787_15_1_2"),"DIA_SEMANA"])
 # (consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "15_1514_2_150036787_15_1_2"), "Ndays"] )
-View(consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "25_2501_1_250057870_5_1_1"), ] )
+# View(consumption_nutrients_day[which(consumption_nutrients_day$COD_INFOR == "25_2501_1_250057870_5_1_1"), ] )
 
 
 # all nutrients ()
@@ -140,9 +139,7 @@ consumption_nutrients_day_all <- filter_interesting_food %>%
 
                                            
 # all data to plot                                         
-consumption_nutrients_day <- bind_rows(consumption_nutrients_day# %>%
-                                #filter (sea_food == "All minus seafood")
-                                , # only seafood
+consumption_nutrients_day <- bind_rows(consumption_nutrients_day, 
           consumption_nutrients_day_all) #all sources
 
                                          
@@ -441,13 +438,15 @@ dev.off()
               
               
 
-# require(patchwork)
+# patchwork
 pdf(here ("output","patchwork_nutrients.pdf"),width =8,height = 12, onefile=T)
 (ptn_plot)/ ( magnesium_plot | calcium_plot)/(iron_plot| zinc_plot)/(omega_plot | vitA_plot)
 dev.off()
 (ptn_plot)/ ( magnesium_plot) / (calcium_plot)/ (iron_plot)/ (zinc_plot)/(omega_plot) / (vitA_plot)
 
+
 # ------------------------------------------
+
 
 # statistical analysis
 
@@ -675,9 +674,9 @@ prop_FAO<- lapply (nut, function (nut)
         
         # all other sources
         # all_food<- d4$QTD[which (d4$sea_food == "All minus seafood")]/sum(d4$QTD)# proportion of remaining food
-        all_sf<- d4$QTD[which (d4$sea_food == "All minus seafood")]/sum(d4$QTD) # proportion of seafood in the diet
-        all_nut <- d4$Quantity[which (d4$sea_food == "All minus seafood")] # seafood nutrient intake 
-        all_quantity <- d4$QTD[which (d4$sea_food == "All minus seafood")] # daily quantity of seafood
+        all_sf<- d4$QTD[which (d4$sea_food == "All minus seafood")]/sum(d4$QTD) # proportion of all in the diet
+        all_nut <- d4$Quantity[which (d4$sea_food == "All minus seafood")] # all nutrient intake 
+        all_quantity <- d4$QTD[which (d4$sea_food == "All minus seafood")] # daily quantity of all
         # proportion to achieve FAO's recommendations
         proportion_FAO_all <- all_sf * FAO_threshold$threshold[which(FAO_threshold$Nutrient %in% d4$Nutrient)]/all_nut
         
@@ -811,66 +810,3 @@ df_prop_FAO %>%
   summarize (median (prop,na.rm=T)) 
 
 
-
-
-# garbage
-
-#par(mfrow=c(3,2))
-#
-#lapply (model.anova, plot)
-#
-#TukeyHSD (model.anova[[1]]$`(Intercept)`, "region")
-#
-#require("agricolae")
-#
-#HSD.test (model.anova[[1]]$Within, trt="region")
-#
-## posthoc analysis
-#posthoc_test <- lapply (model.anova, TukeyHSD, "region")
-#
-## nutrients
-#nuts <- unique(consumption_nutrients_day$Nutrient)
-#plots_interaction <- lapply (seq (1,length(nuts)), function (i)
-#
-#  GGTukey.2(posthoc_test[[i]])+ggtitle (nuts[i]) + theme(legend.position = "none")
-#
-#  )
-#
-## plot vit-A without interaction
-#posthoc_test_vit.a_region <- TukeyHSD(model.anova[[5]], "region")
-#posthoc_test_vit.a_sf <- TukeyHSD(model.ancova[[5]], "sea_food")
-#plots_vita<-GGTukey.2(posthoc_test_vit.a_region)+ggtitle (nuts[5]) 
-#GGTukey.2(posthoc_test_vit.a_sf)+ggtitle (nuts[5]) 
-#
-## plot and save
-#pdf(here ("output", "tukeyhsd_plots.pdf"),height=17,width=10)
-#grid.arrange(plots_interaction[[1]]+theme(legend.position = "none",
-#                                          plot.title = element_text(size=14)),
-#             plots_interaction[[2]]+theme(axis.text.y =  element_blank(),
-#                                          legend.position = "none",
-#                                          plot.title = element_text(size=14)),
-#             plots_interaction[[3]]+theme(legend.position = "none",
-#                                          plot.title = element_text(size=14)),
-#             plots_interaction[[4]]+theme(axis.text.y =  element_blank(),
-#                                          legend.position = "none",
-#                                          plot.title = element_text(size=14)),
-#             plots_interaction[[6]]+theme(legend.position = "none",
-#                                          plot.title = element_text(size=14)),
-#             plots_interaction[[7]]+theme(axis.text.y =  element_blank(),
-#                                          legend.position = "none",
-#                                          plot.title = element_text(size=14)),
-#             #plots_vita+theme(plot.title = element_text(size=14)),
-#             plots_interaction[[5]]+theme(axis.text.y =  element_blank(),
-#                                          legend.position = "right",
-#                                          plot.title = element_text(size=14)),
-#             
-#             ncol=3,nrow=4,
-#             layout_matrix = rbind (c(1,1,2),
-#                                    c(3,3,4),
-#                                    c(5,5,6),
-#                                    c(7,7,NA))
-#             
-#             
-#)
-#dev.off()
-#

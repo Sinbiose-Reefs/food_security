@@ -3,16 +3,8 @@
 
 # Nutrition
 # load packages
-require(here)
-require(openxlsx)
-require(vegan)
-require(ape)
-require(ggrepel)
-require(gridExtra)
-require(dplyr)
-require("openxlsx")
-
 source ("R/functions.R")
+source ("R/packages.R")
 
 
 # load fisheries data (Freire et al. 2021)
@@ -89,7 +81,6 @@ load(here ("output","worms_fish.RData"))
 
 # two rows
 df_worms_record <- data.frame(do.call(rbind,worms_record_fish))
-#df_worms_record$scientificname <- gsub ("", "_", df_worms_record$scientificname)
 
 
 # valid name WoRMS 
