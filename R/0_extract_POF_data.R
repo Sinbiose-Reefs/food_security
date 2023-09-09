@@ -67,5 +67,6 @@ CONSUMO_ALIMENTAR <-
            , dec="."
   )   
 
- #save these heavy datasets
- save (MORADOR,CONSUMO_ALIMENTAR,file= "POF_processed_data.RData")
+#save these heavy datasets
+dir.create ("processed_data")
+save (MORADOR,CONSUMO_ALIMENTAR,file= here ("processed_data", "POF_processed_data.RData"))

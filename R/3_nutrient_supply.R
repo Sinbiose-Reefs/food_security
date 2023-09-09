@@ -75,8 +75,8 @@ fisheries$TaxonName <- gsub ("_", " ", fisheries$TaxonName)
 #
 
 ## save this
-#save (worms_record_fish, file = "worms_fish.RData")
-load(here ("output","worms_fish.RData"))
+#save (worms_record_fish, file = here ("processed_data","worms_fish.RData"))
+load(here ("processed_data","worms_fish.RData"))
 
 
 # two rows
@@ -289,7 +289,7 @@ fisheries_wtrait <- rbind (fisheries_genus_match,
                                                  which(colnames(fisheries_species) %in%
                                                          colnames(fisheries_genus_match))])
 # save
-write.xlsx (fisheries_wtrait, file = here ("output", "fisheries_wtrait.xlsx"))
+write.xlsx (fisheries_wtrait, file = here ("processed_data", "fisheries_wtrait.xlsx"))
 
 
 
@@ -323,7 +323,7 @@ table_supply_state <- fisheries_wtrait %>%
 
 
 # save
-save (table_supply_state, file = here ("output", "table_supply_state.RData"))
+save (table_supply_state, file = here ("processed_data", "table_supply_state.RData"))
 
 
 

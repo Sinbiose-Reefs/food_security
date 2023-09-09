@@ -3,7 +3,7 @@
 source("R/packages.R")
 
 # load data
-load ( "POF_processed_data.RData")
+load (here ("processed_data", "POF_processed_data.RData"))
 
 ## create an identified to each unit
 MORADOR$COD_INFOR  <- paste(MORADOR$UF,
@@ -66,9 +66,6 @@ omega3 <- read.csv (here ("POF_government",
                      sep=",")
 
 
-# bind omega 3 in the consumption table
-CONSUMO_ALIMENTAR$Omega3 <- (omega3$O3 [match (CONSUMO_ALIMENTAR$COD_INFOR, omega3$COD_INFOR)])
-
 
 
 # Loading documentation -- food codes
@@ -81,10 +78,10 @@ Documentacao$protein_type[nchar(Documentacao$protein_type)==0] <- NA
 
 
 # MATCHING FOOD TYPE WITH THE CODE
-# table(unique(CONSUMO_ALIMENTAR$V9001) %in% unique(Documentacao$`CÓDIGO DO ALIMENTO`))
+table(unique(CONSUMO_ALIMENTAR$V9001) %in% unique(Documentacao$CÓDIGO.DO.ALIMENTO))
 
 CONSUMO_ALIMENTAR$food_type <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
-                                                    Documentacao$CÓDIGO.DO.ALIMENTO),"DESCRIÇÃO.DO.ALIMENTO"]
+                                                   Documentacao$CÓDIGO.DO.ALIMENTO),"DESCRIÇÃO.DO.ALIMENTO"]
 CONSUMO_ALIMENTAR$food_code <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
                                                    Documentacao$CÓDIGO.DO.ALIMENTO),"CÓDIGO.DO.ALIMENTO"]
 CONSUMO_ALIMENTAR$protein_type <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
@@ -94,6 +91,10 @@ CONSUMO_ALIMENTAR$sea_food <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
 CONSUMO_ALIMENTAR$single_PTN <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
                                                   Documentacao$CÓDIGO.DO.ALIMENTO),"single_PTN"]
 
+
+
+# bind omega 3 in the consumption table
+CONSUMO_ALIMENTAR$Omega3 <- (omega3$O3 [match (CONSUMO_ALIMENTAR$food_type, omega3$DESCRIÇÃO.DO.ALIMENTO)])
 
 
 # BIND INCOME
@@ -106,6 +107,10 @@ CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
                                             "RENDA_TOTAL",
                                             "V0404", 
                                             "V0405")])
+
+
+
+
 
 
 # change colnames
@@ -129,6 +134,7 @@ CONSUMO_ALIMENTAR$Race <- recode(CONSUMO_ALIMENTAR$Race,
 
 
 
+
 # COLUMNS WE DON'T NEED
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR [,which (colnames(CONSUMO_ALIMENTAR) %in% 
                                    c(paste ("V90",seq (15,30),sep=""),
@@ -136,6 +142,10 @@ CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR [,which (colnames(CONSUMO_ALIMENTAR) %in%
 )]
 
 
+
+View (CONSUMO_ALIMENTAR %>%
+        group_by (food_type) %>%
+        summarise (mean(Omega3,na.rm=T)))
 
 
 
@@ -228,7 +238,7 @@ state_population_2018$`POPULAÇÃO ESTIMADA` <- gsub (" (***)","",state_populati
 state_population_2018$`POPULAÇÃO ESTIMADA` <- gsub (".","",state_population_2018$`POPULAÇÃO ESTIMADA`,fixed = TRUE)
 state_population_2018$`POPULAÇÃO ESTIMADA` <- as.numeric(state_population_2018$`POPULAÇÃO ESTIMADA`)
 
-# df population 
+# df population (average population size 2017 and 2018)
 df_population <- data.frame (state = state_population_2018$state_adj,
                              N_pop = rowMeans(cbind (state_population_2018$`POPULAÇÃO ESTIMADA`, 
                                                     state_population_2017$`POPULAÇÃO ESTIMADA`)))
@@ -240,6 +250,8 @@ CONSUMO_ALIMENTAR$N_pop_state  <-  df_population$N_pop [match (CONSUMO_ALIMENTAR
 
 # examples : inf - levels that did not exist in data 
 which(CONSUMO_ALIMENTAR$state == "Alagoas" & CONSUMO_ALIMENTAR$income_cat == "Class A")
+which(CONSUMO_ALIMENTAR$state == "Alagoas" & CONSUMO_ALIMENTAR$income_cat == "Class B")
+which(CONSUMO_ALIMENTAR$state == "Alagoas" & CONSUMO_ALIMENTAR$income_cat == "Class C")
 
 
 # general food type
@@ -295,7 +307,7 @@ Ndays <- lapply (unique(CONSUMO_ALIMENTAR$COD_INFOR), function (i)
                length (unique(CONSUMO_ALIMENTAR$DIA_SEMANA [which(CONSUMO_ALIMENTAR$COD_INFOR == i)]))
 )
 names(Ndays) <- unique(CONSUMO_ALIMENTAR$COD_INFOR)
- # melt
+# melt
 Ndays <- data.matrix (do.call(rbind,Ndays))
 dimnames(Ndays)[2] <- "Ndays"
 
@@ -327,7 +339,7 @@ round(dat_state <- rbind (dat_state,
        data.frame (int=sum(dat_state$int),
                     prop=sum(dat_state$prop))
 ),2)
-write.xlsx(dat_state,file = here ("output", "state_interviewees.xlsx"), rowNames=T)
+write.xlsx(dat_state,file = here ("processed_data", "state_interviewees.xlsx"), rowNames=T)
 
 # families
 length(unique(CONSUMO_ALIMENTAR$COD_INFOR))
@@ -342,7 +354,7 @@ length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$single_PTN ==
                                                    CONSUMO_ALIMENTAR$sea_food == 1)]))
 
 # save  
-save (CONSUMO_ALIMENTAR, file = here ("output",
+save (CONSUMO_ALIMENTAR, file = here ("processed_data",
                                       "fishConsumption_Income_all_food.RData"))
 
 
@@ -357,10 +369,14 @@ CONSUMO_ALIMENTAR_MEAT <- CONSUMO_ALIMENTAR %>%
   filter (general_type != "DD")
 
 
+View (CONSUMO_ALIMENTAR_MEAT %>%
+        group_by (food_type) %>%
+        summarise (mean(Omega3,na.rm=T)))
+
 
 # food consumption - meat
-save (CONSUMO_ALIMENTAR_MEAT, file = here ("output",
-                                      "fishConsumption_Income.RData"))
+save (CONSUMO_ALIMENTAR_MEAT, file = here ("processed_data",
+                                      "fishConsumption_Income_meat.RData"))
 
 
 # end data organization

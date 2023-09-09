@@ -2,7 +2,15 @@
 
 # ------------------------------------------- # 
 
+
 # Explore the patterns of consumption across states
+
+
+# codes used to produce the components of Fig. 1
+
+
+# basic data of consumption
+
 
 # ------------------------------------------- # 
 
@@ -19,8 +27,8 @@ source ("R/functions.R")
 
 
 # load data for analysis
-load (here ("output",
-            "fishConsumption_Income.RData"))
+load (here ("processed_data",
+            "fishConsumption_Income_meat.RData"))
 
 
 
@@ -410,7 +418,7 @@ consumption_nutrients <- filter_interesting_food %>%
 # summarize the data to calculate total demand
 # calculate the averages across states to have per capita consumption of seafood and nutrients
 states <- unique(consumption_nutrients$state)
-df_states_kg_nut  <- lapply (states, function (i) { # and income class
+df_states_kg_nut_SeaFood  <- lapply (states, function (i) { # and income class
                         
                           # subset the data
                           d1 <- consumption_nutrients [which(consumption_nutrients$state == i),] 
@@ -432,9 +440,9 @@ df_states_kg_nut  <- lapply (states, function (i) { # and income class
                           
 })
 # melt the list
-consumption_nutrients <- do.call(rbind , df_states_kg_nut)
+consumption_nutrients_SeaFood <- do.call(rbind , df_states_kg_nut_SeaFood)
 # adjust names
-consumption_nutrients <- consumption_nutrients %>% 
+consumption_nutrients_SeaFood <- consumption_nutrients_SeaFood %>% 
   mutate(state_adj = recode(state, 
                             "Rio Grande Do Sul" = "Rio Grande do Sul"
   )) %>%
@@ -443,15 +451,64 @@ consumption_nutrients <- consumption_nutrients %>%
 
 
 # averages
-mean(consumption_nutrients$sum_seafood_kg)
-sd(consumption_nutrients$sum_seafood_kg)
+mean(consumption_nutrients_SeaFood$sum_seafood_kg)
+sd(consumption_nutrients_SeaFood$sum_seafood_kg)
 
-consumption_nutrients %>%
+consumption_nutrients_SeaFood %>%
   arrange(sum_seafood_kg)
 
 # save
-save (consumption_nutrients, file = here ("output", "consumption_nutrients.RData"))
+save (consumption_nutrients_SeaFood, file = here ("processed_data", "consumption_nutrients_SeaFood.RData"))
 
+
+
+
+
+# demand for other sources
+
+df_states_kg_nut_Other  <- lapply (states, function (i) { # and income class
+  
+  # subset the data
+  d1 <- consumption_nutrients [which(consumption_nutrients$state == i),] 
+  # calculate the sum
+  df_test <- data.frame (state = i,
+                         npop=unique(d1$mean_N_pop),
+                         nint = length (unique(d1$COD_INFOR)),
+                         sum_seafood_kg = sum(d1$QTD_kg[is.na(d1$sea_food)]),
+                         sum_protein_kg = sum(d1$PTN_kg[is.na(d1$sea_food)]),
+                         sum_calcium_kg = sum(d1$Calcium_kg[is.na(d1$sea_food)]),
+                         sum_iron_kg = sum(d1$Iron_kg[is.na(d1$sea_food)]),
+                         sum_zinc_kg = sum(d1$Zinc_kg[is.na(d1$sea_food)]),
+                         sum_vita_kg = sum(d1$`Vitamin-A_kg`[is.na(d1$sea_food)]),
+                         sum_omega3_kg = sum(d1$Omega3_kg[is.na(d1$sea_food)]),
+                         sum_magn_kg = sum(d1$Magnesium_kg[is.na(d1$sea_food)]))
+  
+  
+  df_test
+  
+})
+
+# melt the list
+consumption_nutrients_Other <- do.call(rbind , df_states_kg_nut_Other)
+
+# adjust names
+consumption_nutrients_Other <- consumption_nutrients_Other %>% 
+  mutate(state_adj = recode(state, 
+                            "Rio Grande Do Sul" = "Rio Grande do Sul"
+  )) %>%
+  
+  mutate_at(vars (sum_seafood_kg:sum_magn_kg), funs(. / nint))   # per capita amounts
+
+
+# averages
+mean(consumption_nutrients_Other$sum_seafood_kg)
+sd(consumption_nutrients_Other$sum_seafood_kg)
+
+consumption_nutrients_Other %>%
+  arrange(sum_seafood_kg)
+
+# save
+save (consumption_nutrients_Other, file = here ("processed_data", "consumption_nutrients_Other.RData"))
 
 
 # -------------------------------------------------------------------------
@@ -576,3 +633,4 @@ ggsave(p, file=here ('output',"circular_plot.pdf"),
        width=10, height=10,bg="white")
 
 
+rm(list=ls())
