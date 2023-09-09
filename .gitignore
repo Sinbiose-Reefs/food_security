@@ -15,3 +15,5 @@ output/model_results
 output/*.RData
 processed_data
 Whats* 
+example*
+glm*
