@@ -287,6 +287,13 @@ dev.off()
 
 # ----------------------------------------------------
 
+# QTD	Quantidade em gramas consumida (g)
+# PTN	Quantidade de proteínas em gramas consumida (g)
+# AGPOLI	Quantidade de ácidos graxos poli-insaturados em gramas (g)
+# CALCIO	Quantidade de cálcio em miligramas (mg)
+# FERRO	Quantidade de ferro em miligramas (mg)
+# ZINCO	Quantidade de zinco em miligramas (mg)
+# VITA_RAE	Quantidade de vitamina A, atividade retinoica, em microgramas (mcg)
 
 
 
@@ -294,10 +301,17 @@ dev.off()
 # filter the food
 filter_interesting_food <- CONSUMO_ALIMENTAR_MEAT 
 
+# transform nutrients into grams
+filter_interesting_food <- filter_interesting_food %>% 
+  
+  mutate (`Vitamin-A` = `Vitamin-A`/1e+6,
+          Calcium = Calcium/1000,
+          Zinc = Zinc/1000,
+          Iron = Iron/1000,
+          Magnesium = Magnesium/1000) # into grams
 
 # function to transform quantitites into  kg / year
 fun_kg_year <- function (x) {(x/1000)*365}
-
 
 # extract and transform the data
 consumption_all <- filter_interesting_food %>%
@@ -342,7 +356,6 @@ sum(consumption_all [which(consumption_all$sea_food ==  "1"), "QTD_kg"])/length(
 # nrow(unique(test [which(test$state == "Alagoas"),"COD_INFOR"]))
 
 
-  
 # calculate the averages across states (to map)
 
 states <- unique(consumption_all$state)
@@ -474,14 +487,14 @@ df_states_kg_nut_Other  <- lapply (states, function (i) { # and income class
   df_test <- data.frame (state = i,
                          npop=unique(d1$mean_N_pop),
                          nint = length (unique(d1$COD_INFOR)),
-                         sum_seafood_kg = sum(d1$QTD_kg[is.na(d1$sea_food)]),
-                         sum_protein_kg = sum(d1$PTN_kg[is.na(d1$sea_food)]),
-                         sum_calcium_kg = sum(d1$Calcium_kg[is.na(d1$sea_food)]),
-                         sum_iron_kg = sum(d1$Iron_kg[is.na(d1$sea_food)]),
-                         sum_zinc_kg = sum(d1$Zinc_kg[is.na(d1$sea_food)]),
-                         sum_vita_kg = sum(d1$`Vitamin-A_kg`[is.na(d1$sea_food)]),
-                         sum_omega3_kg = sum(d1$Omega3_kg[is.na(d1$sea_food)]),
-                         sum_magn_kg = sum(d1$Magnesium_kg[is.na(d1$sea_food)]))
+                         sum_other_kg = sum(d1$QTD_kg[is.na(d1$sea_food)]),
+                         sum_other_protein_kg = sum(d1$PTN_kg[is.na(d1$sea_food)]),
+                         sum_other_calcium_kg = sum(d1$Calcium_kg[is.na(d1$sea_food)]),
+                         sum_other_iron_kg = sum(d1$Iron_kg[is.na(d1$sea_food)]),
+                         sum_other_zinc_kg = sum(d1$Zinc_kg[is.na(d1$sea_food)]),
+                         sum_other_vita_kg = sum(d1$`Vitamin-A_kg`[is.na(d1$sea_food)]),
+                         sum_other_omega3_kg = sum(d1$Omega3_kg[is.na(d1$sea_food)]),
+                         sum_other_magn_kg = sum(d1$Magnesium_kg[is.na(d1$sea_food)]))
   
   
   df_test
@@ -497,15 +510,15 @@ consumption_nutrients_Other <- consumption_nutrients_Other %>%
                             "Rio Grande Do Sul" = "Rio Grande do Sul"
   )) %>%
   
-  mutate_at(vars (sum_seafood_kg:sum_magn_kg), funs(. / nint))   # per capita amounts
+  mutate_at(vars (sum_other_kg:sum_other_magn_kg), funs(. / nint))   # per capita amounts
 
 
 # averages
-mean(consumption_nutrients_Other$sum_seafood_kg)
-sd(consumption_nutrients_Other$sum_seafood_kg)
+mean(consumption_nutrients_Other$sum_other_kg)
+sd(consumption_nutrients_Other$sum_other_kg)
 
 consumption_nutrients_Other %>%
-  arrange(sum_seafood_kg)
+  arrange(sum_other_kg)
 
 # save
 save (consumption_nutrients_Other, file = here ("processed_data", "consumption_nutrients_Other.RData"))
