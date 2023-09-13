@@ -22,6 +22,7 @@ source ("R/rainplot.R")
 load (here ("processed_data",
             "fishConsumption_Income_all_food.RData"))
 
+
 # check omega3
 View (CONSUMO_ALIMENTAR %>%
   group_by (bluefood,food_type) %>%
@@ -534,6 +535,7 @@ dir.create(here("output", "model_results"))
 save (model.anova,
       file = here("output", "model_results", "model.anova.RData"))
 
+load(file = here("output", "model_results", "model.anova.RData"))
 
 # all food sources
 # run model (ancova)
@@ -624,6 +626,7 @@ consumption_nutrients_day %>% #[which(consumption_nutrients_day$),] %>%
 save (model.anova.all,
       file = here("output", "model_results", "model.anova.all.RData"))
 
+load(file = here("output", "model_results", "model.anova.all.RData"))
 
 # --------------------------------
 
@@ -666,6 +669,10 @@ nutrients <- unique(consumption_nutrients_day$Nutrient)
 informant <- d3[[which(names(d3) == "15_1501_1_150082236_8_1_1")]] # check of infinites ( a case where no nutrient was achieved with the diet -- weird )
 informant <- d3[[which(names(d3) == "15_1510_1_150034128_8_1_1")]]
 
+# zeros entries
+check_zeros <- do.call (rbind, d3)
+table(check_zeros$Quantity == 0)[2]/sum(table(check_zeros$Quantity == 0))
+
 # calculate
 prop_FAO <- lapply (seq (1,100,1), function (prop) # proportions of seafood in the diet 
   
@@ -679,7 +686,7 @@ prop_FAO <- lapply (seq (1,100,1), function (prop) # proportions of seafood in t
                 # seafood
                 seaf <- (d4$QTD[which (d4$sea_food == "Seafood")]/sum(d4$QTD))*100 # proportion of seafood in the diet
                 seaf_nut <- d4$Quantity[which (d4$sea_food == "Seafood")] # seafood nutrient intake 
-                seaf_nut <- ifelse (seaf_nut ==0,0.0001,seaf_nut)
+                seaf_nut <- ifelse (seaf_nut == 0,0.0001,seaf_nut)
                 seaf_quantity <- d4$QTD[which (d4$sea_food == "Seafood")] # daily quantity of seafood
                 # proportion to achieve FAO's recommendations
                 proportion_FAO <- (seaf * FAO_threshold$threshold[which(FAO_threshold$Nutrient %in% d4$Nutrient)])/seaf_nut
