@@ -29,7 +29,58 @@ df_prop_FAO <- do.call(rbind,df_prop_FAO)
 
 # average
 mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")])
-hist(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")])
+
+
+
+
+
+par(mfrow=c(1,1))
+
+# seafood
+hist(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")],
+     main = "Observed percentage of different\nfood types in the diet",
+     xlab = "Percentage",
+     ylab = "Frequency (projections * individuals)",
+     xlim=c(0,100),
+     col="blue")
+# other 
+hist(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "all_minus_seafood")],
+     add=T,col = "green3")
+
+abline(v=mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")]),
+       lwd=2,col="blue4")
+abline(v=mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "all_minus_seafood")]),
+       lwd=2,col="green4")
+
+
+# distribution of ratio values
+
+par(mfrow=c(2,2))
+hist(df_prop_FAO$proj_nut_FAO [which(df_prop_FAO$type == "seafood")],
+          main = "Seafood",
+            xlab = "Raw ratio values (FAO recommendations / projections)",
+            ylab = "Frequency (projections * individuals)",
+     col = "blue")
+# other 
+hist(df_prop_FAO$proj_nut_FAO [which(df_prop_FAO$type == "all_minus_seafood")],
+               main = "Other sources",
+               xlab = "Raw ratio values (FAO recommendations / projections)",
+               ylab = "",
+     col = "green3")
+
+# log
+hist(log(df_prop_FAO$proj_nut_FAO [which(df_prop_FAO$type == "seafood")]),
+     main = "Seafood",
+     xlab = "Natural-log of ratio values (FAO recommendations / projections)",
+     ylab = "Frequency (projections * individuals)",
+     col = "blue")
+# other 
+hist(log(df_prop_FAO$proj_nut_FAO [which(df_prop_FAO$type == "all_minus_seafood")]),
+     main = "Other sources",
+     xlab = "Natural-log of ratio values (FAO recommendations / projections)",
+     ylab = "",
+     col = "green3")
+
 
 # average vals
 p1<-df_prop_FAO %>% 
@@ -55,7 +106,7 @@ p1<-df_prop_FAO %>%
   facet_wrap(~nutrient,scales = "free",nrow=1)+
   theme_classic() + 
   theme(legend.position = "top")+
-  ylab ("Deviations from FAO's recommendations\n(natural-log scale)")+
+  ylab ("Deviations from FAO's recommendations\n(ratio at natural-log scale)")+
   xlab ("Proportion of seafood in the diet") + 
   scale_x_continuous(sec.axis = sec_axis (~ .-1,
                                           name = "Proportion of other sources in the diet"))+
