@@ -105,19 +105,19 @@ binded_data_all <- binded_data_all %>%
 # organize data to plot
 #colnames(binded_data) <- gsub ("FERRO", "Iron", colnames(binded_data))
 #colnames(binded_data) <- gsub ("AGPOLI", "Omega_3", colnames(binded_data))
-colnames(binded_data_all) <- gsub ("sum_seafood_kg", "Catch_QTD_kg", colnames(binded_data_all))
+colnames(binded_data_all) <- gsub ("sum_other_kg", "Catch_QTD_kg", colnames(binded_data_all))
 colnames(binded_data_all) <- gsub ("Omega3_kg", "Omega-3_kg", colnames(binded_data_all))
 
 
 # calculate the difference of nutrient consumption through all sources relative to FAOs recommendations
 binded_data_all <- binded_data_all %>% 
-  mutate (sum_protein_kg_diff = FAO_threshold$yearly_needs[grep ("Protein",FAO_threshold$label)] - sum_protein_kg ,
-          sum_calcium_kg_diff = FAO_threshold$yearly_needs[grep ("Calcium",FAO_threshold$label)] - sum_calcium_kg,
-          sum_iron_kg_diff =  FAO_threshold$yearly_needs[grep ("Iron",FAO_threshold$label)] - sum_iron_kg,
-          sum_zinc_kg_diff =  FAO_threshold$yearly_needs[grep ("Zinc",FAO_threshold$label)] - sum_zinc_kg,
-          sum_vita_kg_diff =  FAO_threshold$yearly_needs[grep ("Vitamin",FAO_threshold$label)] - sum_vita_kg,
-          sum_omega3_kg_diff =  FAO_threshold$yearly_needs[grep ("Omega",FAO_threshold$label)] - sum_omega3_kg,
-          sum_magn_kg_diff =  FAO_threshold$yearly_needs[grep ("Magnesium",FAO_threshold$Nutrient)] - sum_magn_kg
+  mutate (sum_protein_kg_diff = FAO_threshold$yearly_needs[grep ("Protein",FAO_threshold$label)] - sum_other_protein_kg ,
+          sum_calcium_kg_diff = FAO_threshold$yearly_needs[grep ("Calcium",FAO_threshold$label)] - sum_other_calcium_kg,
+          sum_iron_kg_diff =  FAO_threshold$yearly_needs[grep ("Iron",FAO_threshold$label)] - sum_other_iron_kg,
+          sum_zinc_kg_diff =  FAO_threshold$yearly_needs[grep ("Zinc",FAO_threshold$label)] - sum_other_zinc_kg,
+          sum_vita_kg_diff =  FAO_threshold$yearly_needs[grep ("Vitamin",FAO_threshold$label)] - sum_other_vita_kg,
+          sum_omega3_kg_diff =  FAO_threshold$yearly_needs[grep ("Omega",FAO_threshold$label)] - sum_other_omega3_kg,
+          sum_magn_kg_diff =  FAO_threshold$yearly_needs[grep ("Magnesium",FAO_threshold$Nutrient)] - sum_other_magn_kg
           
           ) %>%
   
@@ -156,7 +156,7 @@ plot_all <- df_nut_data %>%
   theme_bw()+
   my_theme+
   geom_text_repel(size=2,
-                  max.overlaps = def_max.overlaps)+
+                  max.overlaps = def_max.overlaps) +
   #scale_colour_viridis_d(begin=0.2,end=0.8)
   scale_fill_distiller(palette = "Spectral",
                        direction =1)
@@ -164,6 +164,7 @@ plot_all <- df_nut_data %>%
 
 # plot protein
 
+require(forcats)
 
 # bind seafood and other sources
 plot_protein <- cbind (
@@ -171,14 +172,24 @@ plot_protein <- cbind (
     select("state_adj",contains(c("Protein", "poly"))),
   
   binded_data_all %>% 
-    select("state_adj",contains(c("protein", "poly")))
+    select(contains(c("protein", "poly")),-"Protein_mu_kg_1")
   
 ) %>%
-  reshape2::melt (id.vars = c("state_adj", "sum_protein_kg_achievedFAO","supply_higher_demand_protein")) %>%
-  mutate (variable = fct_relevel(variable, "sum_protein_kg", "Protein_mu_kg_1", "sum_protein_kg_diff")) %>%
+  
+  # calculate the suplementation (deficits - seafood)
+  
+  mutate (sum_protein_kg_diff = ifelse (sum_protein_kg_diff <=0,0,sum_protein_kg_diff),
+          
+          deficits = sum_protein_kg_diff - sum_protein_kg,
+          
+          deficits = ifelse (deficits <=0,0,deficits)) %>%
+  
+  # melt
+  reshape2::melt (id.vars = c("state_adj", "sum_protein_kg_achievedFAO","supply_higher_demand_protein","sum_protein_kg_diff","sum_other_protein_kg")) %>%
+  mutate (variable = fct_relevel(variable, "sum_protein_kg", "Protein_mu_kg_1", "deficits")) %>%
   mutate (inter_fact = paste (supply_higher_demand_protein,sum_protein_kg_achievedFAO,sep=".")) %>%
   ggplot (aes (x= variable, 
-               y=abs(value),
+               y=(value),
                group= state_adj,
                col=inter_fact,
                label = state_adj)) +
@@ -197,14 +208,23 @@ plot_calcium <- cbind (
     select("state_adj",contains(c("calcium", "poly"))),
   
   binded_data_all %>% 
-    select("state_adj",contains(c("calcium", "poly")))
+    select(contains(c("calcium", "poly")), -"Calcium_mu_kg_1")
   
 ) %>%
-  reshape2::melt (id.vars = c("state_adj", "sum_calcium_kg_achievedFAO","supply_higher_demand_calcium")) %>%
-  mutate (variable = fct_relevel(variable, "sum_calcium_kg", "Calcium_mu_kg_1", "sum_calcium_kg_diff")) %>%
+  # calculate the suplementation (deficits - seafood)
+  
+  mutate (sum_calcium_kg_diff = ifelse (sum_calcium_kg_diff <=0,0,sum_calcium_kg_diff),
+          
+          deficits = sum_calcium_kg_diff - sum_calcium_kg,
+          
+          deficits = ifelse (deficits <=0,0,deficits)) %>%
+  
+  # organize the data
+  reshape2::melt (id.vars = c("state_adj", "sum_calcium_kg_achievedFAO","supply_higher_demand_calcium","sum_calcium_kg_diff","sum_other_calcium_kg")) %>%
+  mutate (variable = fct_relevel(variable, "sum_calcium_kg", "Calcium_mu_kg_1", "deficits")) %>%
   mutate (inter_fact = paste (supply_higher_demand_calcium,sum_calcium_kg_achievedFAO,sep=".")) %>%
   ggplot (aes (x= variable, 
-               y=abs(value),
+               y=(value),
                group= state_adj,
                col=inter_fact,
                label = state_adj)) +
@@ -223,14 +243,25 @@ plot_zinc <- cbind (
     select("state_adj",contains(c("zinc", "poly"))),
   
   binded_data_all %>% 
-    select("state_adj",contains(c("Zinc", "poly")))
+    select(contains(c("Zinc", "poly")),-"Zinc_mu_kg_1")
   
 ) %>%
-  reshape2::melt (id.vars = c("state_adj", "sum_zinc_kg_achievedFAO","supply_higher_demand_zinc")) %>%
-  mutate (variable = fct_relevel(variable, "sum_zinc_kg", "Zinc_mu_kg_1", "sum_zinc_kg_diff")) %>%
+  
+  
+  # calculate the suplementation (deficits - seafood)
+  
+  mutate (sum_zinc_kg_diff = ifelse (sum_zinc_kg_diff <=0,0,sum_zinc_kg_diff),
+          
+          deficits = sum_zinc_kg_diff - sum_zinc_kg,
+          
+          deficits = ifelse (deficits <=0,0,deficits)) %>%
+  
+  # melt the data
+  reshape2::melt (id.vars = c("state_adj", "sum_zinc_kg_achievedFAO","supply_higher_demand_zinc","sum_zinc_kg_diff","sum_other_zinc_kg")) %>%
+  mutate (variable = fct_relevel(variable, "sum_zinc_kg", "Zinc_mu_kg_1", "deficits")) %>%
   mutate (inter_fact = paste (supply_higher_demand_zinc,sum_zinc_kg_achievedFAO,sep=".")) %>%
   ggplot (aes (x= variable, 
-               y=abs(value),
+               y=(value),
                group= state_adj,
                col=inter_fact,
                label = state_adj)) +
@@ -250,11 +281,20 @@ plot_iron <- cbind (
     select("state_adj",contains(c("iron", "poly"))),
   
   binded_data_all %>% 
-    select("state_adj",contains(c("iron", "poly")))
+    select(contains(c("iron", "poly")), -"Iron_mu_kg_1")
   
 ) %>%
-  reshape2::melt (id.vars = c("state_adj", "sum_iron_kg_achievedFAO","supply_higher_demand_iron")) %>%
-  mutate (variable = fct_relevel(variable, "sum_iron_kg", "Iron_mu_kg_1", "sum_iron_kg_diff")) %>%
+  # calculate the suplementation (deficits - seafood)
+  
+  mutate (sum_iron_kg_diff = ifelse (sum_iron_kg_diff <=0,0,sum_iron_kg_diff),
+          
+          deficits = sum_iron_kg_diff - sum_iron_kg,
+          
+          deficits = ifelse (deficits <=0,0,deficits)) %>%
+  
+  # melt the data
+  reshape2::melt (id.vars = c("state_adj", "sum_iron_kg_achievedFAO","supply_higher_demand_iron","sum_iron_kg_diff","sum_other_iron_kg")) %>%
+  mutate (variable = fct_relevel(variable, "sum_iron_kg", "Iron_mu_kg_1", "deficits")) %>%
   mutate (inter_fact = paste (supply_higher_demand_iron,sum_iron_kg_achievedFAO,sep=".")) %>%
   ggplot (aes (x= variable, 
                y=abs(value),
@@ -277,11 +317,21 @@ plot_omega3 <- cbind (
     select("state_adj",contains(c("omega", "poly"))),
   
   binded_data_all %>% 
-    select("state_adj",contains(c("omega", "poly")))
+    select(contains(c("omega", "poly")), -"Omega_3_mu_kg_1")
   
 ) %>%
-  reshape2::melt (id.vars = c("state_adj", "sum_omega3_kg_achievedFAO","supply_higher_demand_omega3")) %>%
-  mutate (variable = fct_relevel(variable, "sum_omega3_kg", "Omega_3_mu_kg_1", "sum_omega3_kg_diff")) %>%
+  # calculate the suplementation (deficits - seafood)
+  
+  mutate (sum_omega3_kg_diff = ifelse (sum_omega3_kg_diff <=0,0,sum_omega3_kg_diff),
+          
+          deficits = sum_omega3_kg_diff - sum_omega3_kg,
+          
+          deficits = ifelse (deficits <=0,0,deficits)) %>%
+  
+  # melt the data
+  
+  reshape2::melt (id.vars = c("state_adj", "sum_omega3_kg_achievedFAO","supply_higher_demand_omega3","sum_omega3_kg_diff","sum_other_omega3_kg")) %>%
+  mutate (variable = fct_relevel(variable, "sum_omega3_kg", "Omega_3_mu_kg_1", "deficits")) %>%
   mutate (inter_fact = paste (supply_higher_demand_omega3,sum_omega3_kg_achievedFAO,sep=".")) %>%
   ggplot (aes (x= variable, 
                y=abs(value),
@@ -304,11 +354,21 @@ plot_vitA <- cbind (
     select("state_adj",contains(c("Vit", "poly"))),
   
   binded_data_all %>% 
-    select("state_adj",contains(c("Vit", "poly")))
+    select(contains(c("Vit", "poly")),-"Vitamin_A_mu_kg_1")
   
 ) %>%
-  reshape2::melt (id.vars = c("state_adj", "sum_vita_kg_achievedFAO","supply_higher_demand_vitaA")) %>%
-  mutate (variable = fct_relevel(variable, "sum_vita_kg", "Vitamin_A_mu_kg_1", "sum_vita_kg_diff")) %>%
+  # calculate the suplementation (deficits - seafood)
+  
+  mutate (sum_vita_kg_diff = ifelse (sum_vita_kg_diff <=0,0,sum_vita_kg_diff),
+          
+          deficits = sum_vita_kg_diff - sum_vita_kg,
+          
+          deficits = ifelse (deficits <=0,0,deficits)) %>%
+  
+  # melt the data
+  
+  reshape2::melt (id.vars = c("state_adj", "sum_vita_kg_achievedFAO","supply_higher_demand_vitaA","sum_vita_kg_diff","sum_other_vita_kg")) %>%
+  mutate (variable = fct_relevel(variable, "sum_vita_kg", "Vitamin_A_mu_kg_1", "deficits")) %>%
   mutate (inter_fact = paste (supply_higher_demand_vitaA,sum_vita_kg_achievedFAO,sep=".")) %>%
   ggplot (aes (x= variable, 
                y=abs(value),
@@ -329,45 +389,15 @@ plot_vitA <- cbind (
 # arrange
 
 
-pdf (here ("output", "demand_supply.pdf"),width=11,height=8)
+pdf (here ("output", "demand_supply_deficit.pdf"),width=11,height=8)
 
 grid.arrange(plot_all+ylab("Per capita kg/year"),
-             plot_protein+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "PTN"),
-                          aes (yintercept=yearly_needs),linetype=2
-                          
-               ),
-             plot_zinc+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Zinc"),
-                          aes (yintercept=yearly_needs),linetype=2
-                          
-               ),
-             plot_calcium+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Calcium"),
-                          aes (yintercept=yearly_needs),linetype=2
-                          
-               ),
-             plot_iron+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Iron"),
-                          aes (yintercept=yearly_needs),linetype=2
-                          
-               ),
-             plot_omega3+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Omega3"),
-                          aes (yintercept=yearly_needs),linetype=2
-                          
-               ),
-             plot_vitA+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Vitamin-A"),
-                          aes (yintercept=yearly_needs),linetype=2
-                          
-               ),
+             plot_protein+theme (axis.title = element_blank()),
+             plot_zinc+theme (axis.title = element_blank()),
+             plot_calcium+theme (axis.title = element_blank()),
+             plot_iron+theme (axis.title = element_blank()),
+             plot_omega3+theme (axis.title = element_blank()),
+             plot_vitA+theme (axis.title = element_blank()),
              layout_matrix = rbind (c (1,2,3,4),
                                     c(1,5,6,7)))
 
@@ -498,36 +528,11 @@ plot_vitA<-df_nut_data %>%
 pdf (here ("output", "demand_supply.pdf"),width=10,height=6)
 
 grid.arrange(plot_all+ylab("Per capita kg/year"),
-             plot_zinc+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Zinc"),
-                          aes (yintercept=yearly_needs)
-                            
-                            ),
-             plot_calcium+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Calcium"),
-                          aes (yintercept=yearly_needs)
-                          
-               ),
-             plot_iron+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Iron"),
-                          aes (yintercept=yearly_needs)
-                          
-               ),
-             plot_omega3+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                             filter (Nutrient == "Omega3"),
-                           aes (yintercept=yearly_needs)
-                           
-               ),
-             plot_vitA+theme (axis.title = element_blank())+
-               geom_hline(data=FAO_threshold %>%
-                            filter (Nutrient == "Vitamin-A"),
-                          aes (yintercept=yearly_needs)
-                          
-               ),
+             plot_zinc+theme (axis.title = element_blank()),
+             plot_calcium+theme (axis.title = element_blank()),
+             plot_iron+theme (axis.title = element_blank()),
+             plot_omega3+theme (axis.title = element_blank()),
+             plot_vitA+theme (axis.title = element_blank()),
              layout_matrix = rbind (c (1,2,3),
                                     c(4,5,6)))
 
