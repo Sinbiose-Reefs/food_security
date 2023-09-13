@@ -216,6 +216,7 @@ data_to_fill <- fisheries_species[which(is.na(fisheries_species$Calcium_mu) &
 # match
 data_to_match <- TBCA_nutrients_raw [match (data_to_fill$genus, TBCA_nutrients_raw$genus),which(colnames(TBCA_nutrients_raw) %in% colnames(data_to_fill))]
 rownames(data_to_match) <- rownames(data_to_fill)
+
 # match
 fisheries_species[which(rownames(fisheries_species) %in% rownames(data_to_match)),c("Protein_mu", "Zinc_mu", "Selenium_mu","Calcium_mu","Iron_mu","Vitamin_A_mu","Omega_3_mu")] <-data_to_match[,c("Protein_mu", "Zinc_mu", "Selenium_mu","Calcium_mu","Iron_mu","Vitamin_A_mu","Omega_3_mu")]
 
@@ -309,17 +310,28 @@ write.xlsx (fisheries_wtrait, file = here ("processed_data", "fisheries_wtrait.x
 # and protein (%) in each EEZ.
 
 
+
+# transform nutrients into grams
+fisheries_wtrait <- fisheries_wtrait %>% 
+  
+  mutate (Vitamin_A_mu = Vitamin_A_mu/1e+6,
+          Calcium_mu = Calcium_mu/1000,
+          Zinc_mu = Zinc_mu/1000,
+          Iron_mu = Calcium_mu/1000,
+          Selenium_mu = Selenium_mu/1e+6) # into grams
+
+
 # function to transform g into kg
-trans_qtd <- function (x) {x/0.1}
+trans_qtd <- function (x) {x/1000}
 
 # calculate the supply
 table_supply_state <- fisheries_wtrait %>% 
   filter (Year %in% seq (2000,2015,1)) %>% # choose a year
   mutate (across (ends_with("mu"),list(kg = trans_qtd)),
           CatchAmount_kg = CatchAmount_t*1000) %>% # catch into kg
-  mutate_each(funs(.*CatchAmount_kg), ends_with("kg")) %>% # summarize by state
+  mutate_each(funs(.*CatchAmount_kg), ends_with("mu_kg")) %>% # nutrient landings per state
   group_by (OtherArea) %>% # group and 
-  summarise(across (ends_with("kg"), list(~mean(.x,na.rm=T))))  # summarize per state
+  summarise(across (ends_with("kg"), list(~sum(.x,na.rm=T))))  # summarize per state
 
 
 # save
