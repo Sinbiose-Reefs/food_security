@@ -31,9 +31,7 @@ df_prop_FAO <- do.call(rbind,df_prop_FAO)
 mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")])
 
 
-
-
-
+pdf(here ('output', "histograms.pdf"),onefile = F)
 par(mfrow=c(1,1))
 
 # seafood
@@ -81,6 +79,7 @@ hist(log(df_prop_FAO$proj_nut_FAO [which(df_prop_FAO$type == "all_minus_seafood"
      ylab = "",
      col = "green3")
 
+dev.off()
 
 # average vals
 p1<-df_prop_FAO %>% 
@@ -327,42 +326,7 @@ df_prop_FAO %>%
   group_by(type) %>%
   summarise(range(quantity))
 
-# each nutr
-each_nut <- lapply (nutrients, function (nut)
-  
-  df_prop_FAO %>%
-    
-    filter (nutrient == nut) %>%
-    #filter (prop != "Inf") %>%
-    ggplot (aes (x=log(proj_nut_FAO),
-                 fill = type,
-                 col=type)) +
-    geom_vline(data = df_prop_FAO %>%
-                 
-                 filter (nutrient == nut) %>%
-                 #filter (prop != "Inf") %>%
-                 group_by(type) %>%
-                 summarize (prop=median(proj_nut_FAO,na.rm=T)),
-               
-               aes(xintercept=(log(proj_nut_FAO))),
-               linetype=2)+theme_bw()+
-    theme(legend.position = "none")+
-    geom_density(alpha=0.5) +
-    
-    facet_wrap(~nutrient) 
-  
-)
 
-
-# arrange
-pdf (here ("output", "proportionFAO.pdf"),width = 7,height=4)
-grid.arrange(each_nut[[1]],each_nut[[2]],
-             each_nut[[3]],each_nut[[4]],
-             each_nut[[5]],each_nut[[6]],
-             each_nut[[7]],ncol=4)
-dev.off()
-
-class(df_prop_FAO$prop)
 
 df_prop_FAO %>%
   

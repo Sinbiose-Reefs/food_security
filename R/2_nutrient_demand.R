@@ -310,6 +310,7 @@ filter_interesting_food <- filter_interesting_food %>%
           Iron = Iron/1000,
           Magnesium = Magnesium/1000) # into grams
 
+
 # function to transform quantitites into  kg / year
 fun_kg_year <- function (x) {(x/1000)*365}
 
@@ -345,10 +346,12 @@ consumption_all <- filter_interesting_food %>%
   # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
   # quantity proportional to the number of days
   mutate_at(vars (QTD:Magnesium), funs(. / Ndays)) %>% 
-  # transform into kg
+ 
+   # transform into kg
   mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
           mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
           Ninterv = sum (Ninterv,na.rm=T)) 
+
 
 # averages across all interviewees
 sum(consumption_all [which(consumption_all$bluefood ==  "Bluefood"), "QTD_kg"])/length(unique(consumption_all$COD_INFOR))
@@ -452,8 +455,10 @@ df_states_kg_nut_SeaFood  <- lapply (states, function (i) { # and income class
                           df_test
                           
 })
+
 # melt the list
 consumption_nutrients_SeaFood <- do.call(rbind , df_states_kg_nut_SeaFood)
+
 # adjust names
 consumption_nutrients_SeaFood <- consumption_nutrients_SeaFood %>% 
   mutate(state_adj = recode(state, 

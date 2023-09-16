@@ -22,8 +22,8 @@ source ("R/functions.R")
 
 
 # load data for analysis
-load (here ("output",
-            "fishConsumption_Income.RData"))
+load (here ("processed_data",
+            "fishConsumption_Income_meat.RData"))
 
 
 
@@ -57,7 +57,7 @@ foodType_ind[,sel_cols]<-foodType_ind[,sel_cols]/foodType_ind[,"(all)"]
 #foodType_ind[is.na(foodType_ind)] <- 0
 
 
-
+pdf(here ("output","circular_allstates.pdf"))
 # aggregate
 foodType_ind %>%
   select (-`(all)`) %>%
@@ -93,7 +93,7 @@ foodType_ind %>%
   guides(fill=guide_legend(title="Protein type"))
 
 
-
+dev.off()
 
 
 
@@ -203,8 +203,9 @@ p <- ggplot(dat_circular) +
             hjust=c(1,1,0,0,0), colour = "black", alpha=0.8, size=3, fontface="bold", inherit.aes = FALSE)
 
 
-
+pdf(here ("output","prop_allstates.pdf"))
 p
+dev.off()
 
 
 
@@ -275,7 +276,8 @@ ggplot (data = agg_foodType_ind,
   labs (caption = "Source of data:\nBrazilian Institute of Geography and Statistics (POF, 2018)") +
   guides(fill=guide_legend(title="Protein type"))
 
-
+ggsave(p, file=here ('output',"plot_bluefoods.pdf"), 
+       width=10, height=10,bg="white")
 
 
 # ----------------------------------------------------
@@ -559,11 +561,11 @@ map_ccplot_bluefood <- grid.arrange(p,
                                                   c(1,1,1,1,1),
                                                   c(1,1,1,1,1)))
 #save
-ggsave(map_BR_seafood, file=here ('output',"map_consumption_seafood.pdf"), 
+ggsave(map_BR_seafood, file=here ('output',"map_consumption_seafood_allstates.pdf"), 
        width=10, height=10,bg="white")
-ggsave(map_BR_bluefood, file=here ('output',"map_consumption_bluefood.pdf"), 
+ggsave(map_BR_bluefood, file=here ('output',"map_consumption_bluefood_allstates.pdf"), 
        width=10, height=10,bg="white")
-ggsave(p, file=here ('output',"circular_plot.pdf"), 
+ggsave(p, file=here ('output',"circular_plot_allstatess.pdf"), 
        width=10, height=10,bg="white")
 
 

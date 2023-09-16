@@ -17,7 +17,6 @@ source ("R/rainplot.R")
 
 # ----------------
 
-
 # load data for analysis
 load (here ("processed_data",
             "fishConsumption_Income_all_food.RData"))

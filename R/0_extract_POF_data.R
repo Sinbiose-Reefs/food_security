@@ -5,6 +5,7 @@ source("R/packages.R")
 
 # REGISTRO - MORADOR
 # PS: already saved as RData
+
 MORADOR <- 
   read.fwf(here ("POF_government","Dados_20210304" ,"MORADOR.txt")
            , widths = c(2,4,1,9,2,1,2,2,1,2,2,4,3,1,1,

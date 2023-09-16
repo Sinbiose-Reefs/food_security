@@ -15,7 +15,6 @@ MORADOR$COD_INFOR  <- paste(MORADOR$UF,
                             MORADOR$COD_INFORMANTE,
                             sep = "_")
 
-
 # average per capita income (family average) 
 income_MORADOR <- MORADOR %>% 
   group_by (UF) %>%
@@ -23,7 +22,7 @@ income_MORADOR <- MORADOR %>%
 
 
 # interviewees
-length(unique(MORADOR$COD_INFOR  ))
+length(unique(MORADOR$COD_INFOR ))
 
 
 ## create an identified to each unit
@@ -99,7 +98,7 @@ CONSUMO_ALIMENTAR$Omega3 <- (omega3$O3 [match (CONSUMO_ALIMENTAR$food_type, omeg
 
 # BIND INCOME
 CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
-                                 MORADOR[match (CONSUMO_ALIMENTAR$COD_INFOR ,
+                           MORADOR[match (CONSUMO_ALIMENTAR$COD_INFOR ,
                                                 MORADOR$COD_INFOR ),
                                           c("PC_RENDA_DISP",
                                             "PC_RENDA_MONET", 

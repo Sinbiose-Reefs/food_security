@@ -156,7 +156,7 @@ TBCA_nutrients <- read.xlsx (here ("data_fisheries_nutrients","Nutrients_TBCA.xl
 TBCA_nutrients$especific_source <- gsub ("_", " ", TBCA_nutrients$especific_source)
 
 
-# set trace nutrients (tr) to 0.005 , from here http://www.tbca.net.br/
+# set trace nutrients (tr) to 0.005, from here http://www.tbca.net.br/
 
 TBCA_nutrients$`VA(mcg)_re` <- ifelse (TBCA_nutrients$`VA(mcg)_re` =="tr", 0.005,TBCA_nutrients$`VA(mcg)_re`)
 TBCA_nutrients$`VA(mcg)_rae` <- ifelse (TBCA_nutrients$`VA(mcg)_rae` =="tr", 0.005,TBCA_nutrients$`VA(mcg)_rae`)
@@ -229,7 +229,6 @@ table(fisheries_species$taxonRank) # only species
 # obtain high tax level data
 fisheries_genus <- fisheries[is.na(fisheries$taxonRank) == T,]
 
-
 # nutrients at the genus level
 require(dplyr)
 
@@ -292,7 +291,7 @@ fisheries_wtrait <- rbind (fisheries_genus_match,
 # save
 write.xlsx (fisheries_wtrait, file = here ("processed_data", "fisheries_wtrait.xlsx"))
 save (fisheries_wtrait, file = here ("processed_data", "fisheries_wtrait.RData"))
-
+load(file = here ("processed_data", "fisheries_wtrait.RData"))
 
 # ==============================================================
 
@@ -317,27 +316,51 @@ fisheries_wtrait <- fisheries_wtrait %>%
   mutate (Vitamin_A_mu = Vitamin_A_mu/1e+6,
           Calcium_mu = Calcium_mu/1000,
           Zinc_mu = Zinc_mu/1000,
-          Iron_mu = Calcium_mu/1000,
-          Selenium_mu = Selenium_mu/1e+6) # into grams
+          Iron_mu = Iron_mu/1000,
+          Selenium_mu = Selenium_mu/1e+6) %>% # into grams
+  
+  
+  mutate_each(funs((.*10)/1000), ends_with("mu")) # content g per 1kg
+  
+
+# protein
+# 1 g (observed value) --- 100 g
+# x g --- 1000 g
+# (1*1000)/100 = 10
+
+
+# gramas por kilograma --> kg / desembarque
+
+# 10 g / 1 kg
+
+# 1 ---- 1000
+# x  ---- 10
+
+# 10/1000
+
+
 
 
 # function to transform g into kg
-trans_qtd <- function (x) {x/1000}
+# trans_qtd <- function (x) {(x/1000)} #  and then kg / kg
 
 # calculate the supply
 table_supply_state <- fisheries_wtrait %>% 
   filter (Year %in% seq (2000,2015,1)) %>% # choose a year
-  mutate (across (ends_with("mu"),list(kg = trans_qtd)),
-          CatchAmount_kg = CatchAmount_t*1000) %>% # catch into kg
-  mutate_each(funs(.*CatchAmount_kg), ends_with("mu_kg")) %>% # nutrient landings per state
+  #filter (Year == 2015) %>%
+  mutate (#across (ends_with("mu"),list(kg = trans_qtd)),
+          
+          CatchAmount_kg_mu = CatchAmount_t*1000) %>% # catch into kg
+  
+  mutate_each(funs(.*CatchAmount_kg_mu), ends_with("mu")) %>% # nutrient landings per state
   group_by (Year,OtherArea) %>% # group and 
-  summarise(across (ends_with("kg"), list(~sum(.x,na.rm=T)))) %>%  # summarize per state and year (sum within state and year)
+  summarise(across (ends_with("mu"), list(~sum(.x,na.rm=T)))) %>%  # summarize per state and year (sum within state and year)
   # calculate the average across years
   group_by (OtherArea) %>% # group and 
-  summarise(across (ends_with("kg_1"), list(~mean(.x,na.rm=T))))   # summarize per state and year (sum within state and year)
+  summarise(across (ends_with("mu_1"), list(~mean(.x,na.rm=T))))   # summarize per state and year (sum within state and year)
   
 
 # save
 save (table_supply_state, file = here ("processed_data", "table_supply_state.RData"))
 
-
+rm(list=ls())
