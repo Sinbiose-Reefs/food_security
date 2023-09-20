@@ -31,7 +31,7 @@ df_prop_FAO <- do.call(rbind,df_prop_FAO)
 mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")])
 
 
-pdf(here ('output', "histograms.pdf"),onefile = F)
+pdf(here ('output', "histogram_percentage.pdf"),onefile = T)
 par(mfrow=c(1,1))
 
 # seafood
@@ -49,9 +49,10 @@ abline(v=mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafoo
        lwd=2,col="blue4")
 abline(v=mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "all_minus_seafood")]),
        lwd=2,col="green4")
-
+dev.off()
 
 # distribution of ratio values
+pdf(here ('output', "histogram_recommendations.pdf"),onefile = F)
 
 par(mfrow=c(2,2))
 hist(df_prop_FAO$proj_nut_FAO [which(df_prop_FAO$type == "seafood")],

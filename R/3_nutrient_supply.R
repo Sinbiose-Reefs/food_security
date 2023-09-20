@@ -12,11 +12,21 @@ fisheries <- read.xlsx (here ("data_fisheries_nutrients",
                               "FINAL_RECONSTRUCTED_Brazil_1950_2015_CommercialEtapaII_04072021_IP_Freire.xlsx"),
                         sheet = 2)
 
+grep(",", fisheries$CatchAmount_t)
+
+# point size (catch per year)
+catch_year <- tapply (fisheries$CatchAmount_t,
+                      list(fisheries$OtherArea,
+                           fisheries$Year),
+                      sum) 
+
 
 # adjust name
 fisheries$Sector [which(fisheries$Sector == "industrial (LS, C)")] <- "Industrial (LS, C)"
 fisheries$TaxonName <- gsub (" ", "_", fisheries$TaxonName)
 
+# adjust catch amounts
+mean(as.numeric(gsub (",","",fisheries$CatchAmount_t)))
 
 
 # separate genus, epithet
@@ -309,6 +319,12 @@ load(file = here ("processed_data", "fisheries_wtrait.RData"))
 # and protein (%) in each EEZ.
 
 
+# point size (catch per year)
+catch_year <- tapply (fisheries_wtrait$CatchAmount_t,
+                      list(fisheries_wtrait$OtherArea,
+                           fisheries_wtrait$Year),
+                      sum) 
+
 
 # transform nutrients into grams
 fisheries_wtrait <- fisheries_wtrait %>% 
@@ -321,7 +337,6 @@ fisheries_wtrait <- fisheries_wtrait %>%
   
   
   mutate_each(funs((.*10)/1000), ends_with("mu")) # content g per 1kg
-  
 
 # protein
 # 1 g (observed value) --- 100 g
@@ -338,27 +353,61 @@ fisheries_wtrait <- fisheries_wtrait %>%
 
 # 10/1000
 
+# transform tons of catch into kg
+fisheries_wtrait$CatchAmount_kg_mu <- fisheries_wtrait$CatchAmount_t*1000
 
+# calculate nutrient landings
+table_supply_state  <- fisheries_wtrait %>%
+  filter (Year == 2015) 
 
+# calculate 
+table_supply_state$Vitamin_A_mu <- (table_supply_state$CatchAmount_kg_mu * table_supply_state$Vitamin_A_mu)
+table_supply_state$Iron_mu <- (table_supply_state$CatchAmount_kg_mu * table_supply_state$Iron_mu)
+table_supply_state$Zinc_mu <- (table_supply_state$CatchAmount_kg_mu * table_supply_state$Zinc_mu)
+table_supply_state$Omega_3_mu <- (table_supply_state$CatchAmount_kg_mu * table_supply_state$Omega_3_mu)
+table_supply_state$Protein_mu <- (table_supply_state$CatchAmount_kg_mu * table_supply_state$Protein_mu)
+table_supply_state$Calcium_mu <- (table_supply_state$CatchAmount_kg_mu * table_supply_state$Calcium_mu)
+table_supply_state$Selenium_mu <- (table_supply_state$CatchAmount_kg_mu * table_supply_state$Selenium_mu)
 
 # function to transform g into kg
 # trans_qtd <- function (x) {(x/1000)} #  and then kg / kg
 
-# calculate the supply
-table_supply_state <- fisheries_wtrait %>% 
-  filter (Year %in% seq (2000,2015,1)) %>% # choose a year
-  #filter (Year == 2015) %>%
-  mutate (#across (ends_with("mu"),list(kg = trans_qtd)),
-          
-          CatchAmount_kg_mu = CatchAmount_t*1000) %>% # catch into kg
+# calculate the supply (summarize per state)
+
+# point size (catch per year)
+table_supply_state <- data.frame (
+   
+ 
   
-  mutate_each(funs(.*CatchAmount_kg_mu), ends_with("mu")) %>% # nutrient landings per state
-  group_by (Year,OtherArea) %>% # group and 
-  summarise(across (ends_with("mu"), list(~sum(.x,na.rm=T)))) %>%  # summarize per state and year (sum within state and year)
-  # calculate the average across years
-  group_by (OtherArea) %>% # group and 
-  summarise(across (ends_with("mu_1"), list(~mean(.x,na.rm=T))))   # summarize per state and year (sum within state and year)
-  
+  CatchAmount_kg_mu = tapply (table_supply_state$CatchAmount_kg_mu,
+                       list(table_supply_state$OtherArea),
+                       sum,na.rm=T) ,     
+  Protein_mu = tapply (table_supply_state$Protein_mu,
+                      list(table_supply_state$OtherArea),
+                      sum,na.rm=T) ,
+  Iron_mu = tapply (table_supply_state$Iron_mu,
+                       list(table_supply_state$OtherArea),
+                       sum,na.rm=T) ,
+  Zinc_mu = tapply (table_supply_state$Zinc_mu,
+                    list(table_supply_state$OtherArea),
+                    sum,na.rm=T) ,
+  Omega_3_mu = tapply (table_supply_state$Omega_3_mu,
+                         list(table_supply_state$OtherArea),
+                         sum,na.rm=T) ,
+
+  Calcium_mu = tapply (table_supply_state$Calcium_mu,
+                         list(table_supply_state$OtherArea),
+                         sum,na.rm=T) ,
+  Vitamin_A_mu = tapply (table_supply_state$Vitamin_A_mu,
+                         list(table_supply_state$OtherArea),
+                         sum,na.rm=T) ,
+  Selenium_mu = tapply (table_supply_state$Selenium_mu,
+                         list(table_supply_state$OtherArea),
+                         sum,na.rm=T)
+  )
+
+# set names
+table_supply_state$OtherArea <- rownames(table_supply_state)
 
 # save
 save (table_supply_state, file = here ("processed_data", "table_supply_state.RData"))
