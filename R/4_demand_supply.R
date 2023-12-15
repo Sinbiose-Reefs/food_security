@@ -145,16 +145,12 @@ binded_data_all <- binded_data_all %>%
 
 # plot settings
 def_max.overlaps<-30
-my_theme<- theme(legend.position = c(0.2,0.8),
+my_theme<- theme(legend.position = "none",
                 axis.title.x = element_blank(),
                 axis.text.x = element_text(size=8, 
                                            angle=0))
 
 # all catch and consumption
-
-bind_rows(df_nut_data, 
-df_nut_data %>% map(~mean(.,na.rm=T)) %>% rbind.data.frame)
-
 
 plot_all <- df_nut_data %>% 
   select("state_adj",contains("Catch"))  %>%
@@ -418,9 +414,30 @@ dev.off()
 
 
 
-
-
 # old plots
+# protein
+plot_protein<-df_nut_data %>% 
+  select("state_adj",contains("protein"))  %>%
+  reshape2::melt (id.vars = c("state_adj", "supply_higher_demand_protein")) %>%
+  ggplot (aes (x= variable, 
+               y=(value),
+               group= state_adj,
+               col=supply_higher_demand_protein,
+               label = state_adj)) +
+  geom_point(shape=1,size=3,stroke=2)+
+  geom_line(size =1)+
+  theme_bw()+
+  
+  geom_text_repel(size=2,
+                  max.overlaps = def_max.overlaps)+
+  #scale_colour_viridis_d(begin=0.2,end=0.8)
+  scale_fill_distiller(palette = "Spectral",
+                       direction =1) + 
+  geom_hline (data = FAO_threshold [which(FAO_threshold$Nutrient == "PTN"),],
+              aes (yintercept = yearly_needs))+
+  ggbreak::scale_y_break(c(5, 17.99), expand=F,scales="fixed")+
+  my_theme
+
 # plot zinc
 
 plot_zinc<-df_nut_data %>% 
@@ -434,13 +451,18 @@ plot_zinc<-df_nut_data %>%
   geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
-  my_theme+
+  
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
   #scale_colour_viridis_d(begin=0.2,end=0.8)
   scale_fill_distiller(palette = "Spectral",
-                       direction =1)
-
+                       direction =1) + 
+  geom_hline (data = FAO_threshold [which(FAO_threshold$Nutrient == "Zinc"),],
+              aes (yintercept = yearly_needs))+
+  ggbreak::scale_y_break(c(0.0003, 0.004014), expand=T,scales="fixed")+
+  my_theme
+  
+plot_zinc
 
 # plot calcium
 
@@ -456,16 +478,19 @@ plot_calcium<-df_nut_data %>%
   geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
-  my_theme+
+ 
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
   #scale_colour_viridis_d(begin=0.2,end=0.8)
-  scale_fill_distiller(palette = "Spectral")
+  scale_fill_distiller(palette = "Spectral")+
+  geom_hline (data = FAO_threshold [which(FAO_threshold$Nutrient == "Calcium"),],
+              aes (yintercept = yearly_needs))+
+  ggbreak::scale_y_break(c(0.04, 0.364), expand=T,scales="fixed")+
+  my_theme
 
-
+plot_calcium
 
 # plot iron
-
 plot_iron<-df_nut_data %>% 
   select("state_adj",contains("iron"))  %>%
   reshape2::melt (id.vars = c("state_adj", "supply_higher_demand_iron")) %>%
@@ -477,13 +502,17 @@ plot_iron<-df_nut_data %>%
   geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
-  my_theme+
+
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
   #scale_colour_viridis_d(begin=0.2,end=0.8)
-  scale_fill_distiller(palette = "Spectral")
+  scale_fill_distiller(palette = "Spectral")+
+  geom_hline (data = FAO_threshold [which(FAO_threshold$Nutrient == "Iron"),],
+              aes (yintercept = yearly_needs))+
+  ggbreak::scale_y_break(c(0.00075, 0.008), expand=T,scales="fixed")+
+  my_theme
 
-
+plot_iron
 
 
 # plot omega
@@ -499,12 +528,16 @@ plot_omega3<-df_nut_data %>%
   geom_point(shape=1,size=3,stroke=2)+
   geom_line(size =1)+
   theme_bw()+
-  my_theme+
+  
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
   #scale_colour_viridis_d(begin=0.2,end=0.8)
-  scale_fill_distiller(palette = "Spectral")
-
+  scale_fill_distiller(palette = "Spectral")+
+  geom_hline (data = FAO_threshold [which(FAO_threshold$Nutrient == "Omega3"),],
+              aes (yintercept = yearly_needs))+
+  ggbreak::scale_y_break(c(0.25, 0.9), expand=T,scales="fixed")+
+  my_theme
+plot_omega3
 
 
 # plot vitA
@@ -532,23 +565,34 @@ plot_vitA<-df_nut_data %>%
   geom_text_repel(size=2,
                   max.overlaps = def_max.overlaps)+
   #scale_colour_viridis_d(begin=0.2,end=0.8)
-  scale_fill_distiller(palette = "Spectral")
+  scale_fill_distiller(palette = "Spectral")+
+  geom_hline (data = FAO_threshold [which(FAO_threshold$Nutrient == "Vitamin-A"),],
+              aes (yintercept = yearly_needs))+
+  ggbreak::scale_y_break(c(0.000006, 0.0002915), expand=T,scales="fixed")+
+  my_theme
 
+plot_vitA
 
 # arrange
 
 
 pdf (here ("output", "demand_supply.pdf"),width=10,height=6)
 
-grid.arrange(plot_all+ylab("Per capita kg/year"),
-             plot_zinc+theme (axis.title = element_blank()),
-             plot_calcium+theme (axis.title = element_blank()),
-             plot_iron+theme (axis.title = element_blank()),
-             plot_omega3+theme (axis.title = element_blank()),
-             plot_vitA+theme (axis.title = element_blank()),
-             layout_matrix = rbind (c (1,2,3),
-                                    c(4,5,6)))
+g<-grid.arrange(plot_all+ylab("Per capita kg/year"),
+             plot_protein,
+             plot_zinc,
+             plot_calcium,
+             plot_iron,
+             plot_omega3,
+             plot_vitA,
+             layout_matrix = rbind (c (1,2,3,4),
+                                    c(1,5,6,7)))
 
+ggsave ("test.pdf",g)
+dev.off()
+
+pdf(here ("output","patchwork_landing_nut.pdf"),width =8,height = 12, onefile=T)
+(plot_all+ylab("Per capita kg/year"))/ ( plot_protein | plot_zinc)/(plot_calcium| plot_iron)/(plot_omega3 | plot_vitA)
 dev.off()
 
 
