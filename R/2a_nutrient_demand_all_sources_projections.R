@@ -89,27 +89,27 @@ p1<-df_prop_FAO %>%
   group_by (type,nutrient,prop_diet_projected) %>%
   summarise (av_val =  median(proj_nut_FAO,na.rm=T)) %>% 
   
-  ggplot (aes (x= prop_diet_projected ,
-               y=log(av_val), 
+  ggplot (aes (x= log(av_val)*-1 ,
+               y=prop_diet_projected, 
                group = type ,
                fill=type,
                colour=type)) +
   geom_point(alpha=0.7)+
   geom_line (alpha=0.7)+
   scale_colour_manual (values = c("#89E06C", "#525DDB"))+
-  geom_hline(yintercept=0,linetype=2,colour="black")+
-  geom_vline(xintercept=mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")]),
-             linetype=1,colour="gray")+
-  geom_vline(xintercept=50,linetype=1,colour="gray")+
-  geom_vline(xintercept=25,linetype=1,colour="gray")+
-  geom_vline(xintercept=75,linetype=1,colour="gray")+
   facet_wrap(~nutrient,scales = "free",nrow=1)+
+  geom_vline(xintercept=0,linetype=2,colour="black")+
+  geom_hline(yintercept=mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")]),
+             linetype=1,colour="gray")+
+  geom_hline(yintercept=50,linetype=1,colour="gray")+
+  geom_hline(yintercept=25,linetype=1,colour="gray")+
+  geom_hline(yintercept=75,linetype=1,colour="gray")+
   theme_classic() + 
   theme(legend.position = "top")+
-  ylab ("Deviations from FAO's recommendations\n(ratio at natural-log scale)")+
-  xlab ("Proportion of seafood in the diet") + 
-  scale_x_continuous(sec.axis = sec_axis (~ .-1,
-                                          name = "Proportion of other sources in the diet"))+
+  xlab ("Deviations from FAO's recommendations\n(ratio at natural-log scale)")+
+  ylab ("Proportion of seafood in the diet") + 
+  #scale_y_continuous(sec.axis = sec_axis (~ .-1,
+  #                                        name = "Proportion of other sources in the diet"))+
   labs (subtitle = "A) Nutritional projections")
 
 
@@ -120,7 +120,7 @@ p2<-df_prop_FAO %>%
   filter (type == "seafood" & prop_diet_projected == round(mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")])) | 
             type == "all_minus_seafood" & prop_diet_projected == 100-round(mean(df_prop_FAO$observed_proportion [which(df_prop_FAO$type == "seafood")]))) %>%
   
-  ggplot (aes (x=log(proj_nut_FAO),
+  ggplot (aes (x=log(proj_nut_FAO)*-1,
                fill = type,
                col=type)) +
   geom_vline(data = df_prop_FAO %>%
@@ -130,7 +130,7 @@ p2<-df_prop_FAO %>%
                group_by(type,nutrient) %>%
                summarize (prop=median(proj_nut_FAO)),
              
-             aes(xintercept=(log(prop)),col=type),
+             aes(xintercept=(log(prop)*-1),col=type),
              linetype=1)+theme_bw()+
   
   geom_vline(aes(xintercept=0),linetype=2)+
@@ -153,7 +153,7 @@ p3<-df_prop_FAO %>%
   filter (type == "seafood" & prop_diet_projected == 50 | 
             type == "all_minus_seafood" & prop_diet_projected == 50) %>%
   
-  ggplot (aes (x=log(proj_nut_FAO),
+  ggplot (aes (x=log(proj_nut_FAO)*-1,
                fill = type,
                col=type)) +
   geom_vline(data = df_prop_FAO %>%
@@ -163,7 +163,7 @@ p3<-df_prop_FAO %>%
                group_by(type,nutrient) %>%
                summarize (prop=median(proj_nut_FAO)),
              
-             aes(xintercept=(log(prop)),col=type),
+             aes(xintercept=(log(prop)*-1),col=type),
              linetype=1)+theme_bw()+
   
   geom_vline(aes(xintercept=0),linetype=2)+
@@ -190,7 +190,7 @@ p4<-df_prop_FAO %>%
   filter (type == "seafood" & prop_diet_projected == 25 | 
             type == "all_minus_seafood" & prop_diet_projected == 75) %>%
   
-  ggplot (aes (x=log(proj_nut_FAO),
+  ggplot (aes (x=log(proj_nut_FAO)*-1,
                fill = type,
                col=type)) +
   geom_vline(data = df_prop_FAO %>%
@@ -200,7 +200,7 @@ p4<-df_prop_FAO %>%
                group_by(type,nutrient) %>%
                summarize (prop=median(proj_nut_FAO)),
              
-             aes(xintercept=(log(prop)),col=type),
+             aes(xintercept=(log(prop)*-1),col=type),
              linetype=1)+theme_bw()+
   
   geom_vline(aes(xintercept=0),linetype=2)+
@@ -226,7 +226,7 @@ p5<-df_prop_FAO %>%
   filter (type == "seafood" & prop_diet_projected == 50 | 
             type == "all_minus_seafood" & prop_diet_projected == 50) %>%
   
-  ggplot (aes (x=log(proj_nut_FAO),
+  ggplot (aes (x=log(proj_nut_FAO)*-1,
                fill = type,
                col=type)) +
   geom_vline(data = df_prop_FAO %>%
@@ -236,7 +236,7 @@ p5<-df_prop_FAO %>%
                group_by(type,nutrient) %>%
                summarize (prop=median(proj_nut_FAO)),
              
-             aes(xintercept=(log(prop)),col=type),
+             aes(xintercept=(log(prop)*-1),col=type),
              linetype=1)+theme_bw()+
   
   geom_vline(aes(xintercept=0),linetype=2)+
@@ -258,7 +258,7 @@ p5<-df_prop_FAO %>%
 
 
 # arrange
-pdf (here ("output", "projections.pdf"),width = 10,height=7.5)
+pdf (here ("output", "projections_invertedY.pdf"),width = 10,height=7.5)
 
 grid.arrange(p1,
              p2,
