@@ -38,13 +38,13 @@ CONSUMO_ALIMENTAR_MEAT <- CONSUMO_ALIMENTAR_MEAT %>%
   filter (position == "sea") 
   
   
-
+CONSUMO_ALIMENTAR_MEAT$QTD_N <- CONSUMO_ALIMENTAR_MEAT$QTD/CONSUMO_ALIMENTAR_MEAT$Ndays
 
 # 1 - proportion
 
 foodType_ind <- dcast (data = CONSUMO_ALIMENTAR_MEAT, 
        formula = COD_INFOR+income_cat+region~general_type,
-       value.var= "QTD",
+       value.var= "QTD_N",
        fun.aggregate = sum,
        na.rm=T,
        margins = "general_type",
@@ -69,23 +69,25 @@ pdf (here ("output", "barplot_consumption.pdf"),width=4,height=7)
 # aggregate
 foodType_ind %>%
   select (-`(all)`) %>%
-  filter (is.na(Beef) !=T) %>%
-  group_by(income_cat,region) %>%
-  summarise(across (Beef:Seafood,~ mean(.x, na.rm = TRUE))) %>% 
-  gather ("food_type", "proportion", -income_cat,-region) %>%
-  mutate(food_type = factor(food_type, levels = c("Beef", 
-                                                 "Game",
-                                                 "Goat",
-                                                 "Pork",
-                                                 "Poultry",
-                                                 "Freshwater fish",
-                                                 "Imported fish",
-                                                  "Seafood")))%>%
+  melt() %>%
+  group_by(income_cat,region,variable) %>%
+  summarise(proportion = mean(value, na.rm = TRUE)) %>% 
+  mutate(food_type= variable,
+         food_type = factor(food_type, levels = c("Beef", 
+                                                  "Game",
+                                                  "Goat",
+                                                  "Pork",
+                                                  "Poultry",
+                                                  "Freshwater fish",
+                                                  "Imported fish",
+                                                  "Seafood"))
+         ) %>%
+
   ggplot (aes (fill=food_type, 
                x=(income_cat),
                y=proportion))+
-    geom_bar (position="fill", stat="identity") +
-  coord_polar(theta = "y")+
+    geom_bar (position="stack", stat="identity") +
+  #coord_polar(theta = "y")+
   #scale_fill_viridis_d()+
   scale_fill_brewer(palette = "Spectral",direction=1)+
   facet_wrap(~region,nrow=2,ncol=2)+
@@ -101,7 +103,6 @@ foodType_ind %>%
   guides(fill=guide_legend(title="Protein type"))
 
 
-
 dev.off()
 
 
@@ -113,11 +114,11 @@ dev.off()
 # aggregate
 dat_circular <- foodType_ind %>%
   select (-`(all)`) %>%
-  filter (is.na(Beef) !=T) %>%
-  group_by(income_cat,region) %>% # mean across states and people of a region
-  summarise(across (Beef:Seafood,~ mean(.x, na.rm = TRUE))) %>% 
-  gather ("food_type", "proportion", -income_cat,-region) %>%
-  mutate(food_type = factor(food_type, levels = c("Beef", 
+  melt() %>%
+  group_by(income_cat,region,variable) %>%
+  summarise(proportion = mean(value, na.rm = TRUE)) %>%
+  mutate(food_type= variable,
+         food_type = factor(food_type, levels = c("Beef", 
                                                   "Game",
                                                   "Goat",
                                                   "Pork",
@@ -125,7 +126,8 @@ dat_circular <- foodType_ind %>%
                                                   "Freshwater fish",
                                                   "Imported fish",
                                                   "Seafood")),
-         proportion = proportion*100)
+         proportion = proportion*100
+         )
 
 
 
@@ -213,8 +215,6 @@ p <- ggplot(dat_circular) +
 
 
 p
-
-
 
 
 # ------------------------------------------------------
