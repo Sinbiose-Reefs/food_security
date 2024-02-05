@@ -290,6 +290,6 @@ states_consumption %>%
   theme_bw()+
   theme(legend.position = "top") 
 
-ggsave ("output/barplot_consumption_kg.pdf",width=9,height=6)
+ggsave ("output/barplot_consumption_kg.pdf",width=7,height=4)
 
 rm(list=ls())
