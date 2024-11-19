@@ -1,7 +1,7 @@
 ---
 title: "Food beyond land: seafood contribution to human nutrition in Brazil"
-author: "Maria Luiza Gallina, ReefSynthesis Working Group"
-date: "2023-04-27"
+author: "Maria Luiza Gallina et al., ReefSynthesis Working Group"
+date: "2024-06-04"
 output: github_document
 ---
 
@@ -31,34 +31,28 @@ Repository containing the data and scripts used in the article "Food beyond land
 
 Root
 
-|--- data_fisheries_nutrients
-|----------- "Atributos_especies_Atlantico_&_Pacifico_Oriental_2020_04_28.csv": Reef fish traits (Quimbayo et al. 2021)
-|----------- "FINAL_RECONSTRUCTED_Brazil_1950_2015_CommercialEtapaII_04072021_IP_Freire.xlsx": Landings time series (Freire et al. 2021)
-|----------- "Nutrients_TBCA.xlsx": Table of nutritional content (Brazilian Table), from http://www.tbca.net.br/
-|----------- "Species_Nutrient_Predictions.csv": data from Hicks et al. (2019), available at https://github.com/mamacneil/NutrientFishbase and https://fishbase.mnhn.fr/Nutrients/manual/FishBaseNutrients_2021_06.pdf
-|----------- "Threshold_FAO.xlsx": FAO's thresholds of nutrient consumption
-
-|--- processed_data
-|----------- "POF_processed_data.RData": processed data using POF dataset hosted in the folder "POF_government". This resulted from running the R script "0_extract_POF_data.R"
-
-
-|--- output
-|-----------
-|-----------
-|-----------
-
-|--- POF_government
-|----------- 
-|----------- "Omega3_QTD.csv": Content of Omega-3 in food. Values were gathered from FAO and FishBase. Note that values were only recorded for fish (red meat sources have Omega-3 equal to 0).
-|-----------
-|--- POF_state
-|-----------
-|-----------
-|-----------
-|--- R
-|-----------
-|-----------
-
+|--- data_fisheries_nutrients\
+|----------- "Atributos_especies_Atlantico_&_Pacifico_Oriental_2020_04_28.csv": Reef fish traits (Quimbayo et al. 2021)\
+|----------- "FINAL_RECONSTRUCTED_Brazil_1950_2015_CommercialEtapaII_04072021_IP_Freire.xlsx": Landings time series (Freire et al. 2021)\
+|----------- "Nutrients_TBCA.xlsx": Table of nutritional content (Brazilian Table), from http://www.tbca.net.br/\
+|----------- "Species_Nutrient_Predictions.csv": data from Hicks et al. (2019), available at https://github.com/mamacneil/NutrientFishbase and https://fishbase.mnhn.fr/Nutrients/manual/FishBaseNutrients_2021_06.pdf\
+|----------- "Threshold_FAO.xlsx": FAO's thresholds of nutrient consumption\
+\
+|--- processed_data\
+|----------- "POF_processed_data.RData": processed data using POF dataset hosted in the folder "POF_government". This resulted from running the R script "0_extract_POF_data.R"\
+\
+\
+|--- output\
+|----------- figures (pdf) and RData\
+\
+|--- POF_government\
+|----------- "Omega3_QTD.csv": Content of Omega-3 in food. Values were gathered from FAO and FishBase. Note that values were only recorded for fish (red meat sources have Omega-3 equal to 0).\
+\
+|--- POF_state\
+|----------- Brazilian government data\
+\
+|--- R\
+|----------- several R scripts (numbered according to the processing order) \
 
 
 #### This paper was produced using the following software and associated packages:
