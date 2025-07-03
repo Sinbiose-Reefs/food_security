@@ -6,9 +6,6 @@ require(openxlsx)
 require(here)
 
 
-# create directory to host the results
-dir.create("output")
-
 
 
 # income per state
