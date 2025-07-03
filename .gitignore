@@ -8,9 +8,8 @@ POF_government/Memoria_de_Calculo_20210304
 POF_government/Programas_de_Leitura_20210304
 POF_government/Tradutores_20210304
 POF_government/RawData
-POF_state/*.pdf
-POF_state/*.zip
-POF_state/tabelas_unidades_da_federacao_xls_20191108
+POF_government/Classes_*
+POF_state
 output/model_results
 output/*.RData
 processed_data
@@ -18,3 +17,7 @@ Whats*
 example*
 glm*
 MS
+*.jpeg
+R/2_nutrient_demand_kg_alternative(notused).R
+R/6_explore_nutrient_content_time.R
+
