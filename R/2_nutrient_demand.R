@@ -1,19 +1,15 @@
 
 
-# ------------------------------------------- # 
+# ----------------------------------------------------------- # 
 
+#       Explore the patterns of consumption across states
+#       (quantities shown in the Results)
+#       Codes used to produce the components of Fig. 1,  Figure S2.1, Figure S2.3.
+#       Transform quantities (g) into  kg / year
 
-# Explore the patterns of consumption across states
+# ------------------------------------------------------------ # 
 
-
-# codes used to produce the components of Fig. 1
-
-
-# basic data of consumption
-
-
-# ------------------------------------------- # 
-
+rm(list=ls())
 
 # load packages
 source("R/packages.R")
@@ -21,27 +17,23 @@ source("R/packages.R")
 # load functions
 source ("R/functions.R")
 
+# create directory to host the results
+dir.create("output")
 
 # ----------------
-
-
 
 # load data for analysis
 load (here ("processed_data",
             "fishConsumption_Income_meat.RData"))
 
-
-
 # select only data from coastal state
-
 CONSUMO_ALIMENTAR_MEAT <- CONSUMO_ALIMENTAR_MEAT %>% 
   filter (position == "sea") 
   
-  
+# average consumption across interviewing days  
 CONSUMO_ALIMENTAR_MEAT$QTD_N <- CONSUMO_ALIMENTAR_MEAT$QTD/CONSUMO_ALIMENTAR_MEAT$Ndays
 
 # 1 - proportion
-
 foodType_ind <- dcast (data = CONSUMO_ALIMENTAR_MEAT, 
        formula = COD_INFOR+income_cat+region~general_type,
        value.var= "QTD_N",
@@ -57,13 +49,10 @@ sel_cols <- colnames(foodType_ind)[seq (which(colnames(foodType_ind) == "Beef") 
                             which(colnames(foodType_ind) == "Seafood"),
                             1)]
 
-
 # proportion
 foodType_ind[,sel_cols]<-foodType_ind[,sel_cols]/foodType_ind[,"(all)"]
-# 0/0 = NaN
-#foodType_ind[is.na(foodType_ind)] <- 0
-
-
+ 
+# save fig
 pdf (here ("output", "barplot_consumption.pdf"),width=4,height=7)
 
 # aggregate
@@ -106,7 +95,7 @@ foodType_ind %>%
 dev.off()
 
 
-# circular plot
+# circular plot - Figure 1 and S2.1.
 # https://r-graph-gallery.com/297-circular-barplot-with-groups.html
 # https://r-graph-gallery.com/299-circular-stacked-barplot.html
 
@@ -214,7 +203,7 @@ p <- ggplot(dat_circular) +
 
 
 
-p
+p # Figure 1 and S2.1.
 
 
 # ------------------------------------------------------
@@ -247,10 +236,6 @@ sel_cols <- colnames(foodType_ind)[seq (which(colnames(foodType_ind) == "cephalo
 
 # proportion
 foodType_ind[,sel_cols]<-foodType_ind[,sel_cols]/foodType_ind[,"(all)"]
-# 0/0 = NaN
-#foodType_ind[is.na(foodType_ind)] <- 0
-
-
 
 # aggregate
 agg_foodType_ind <- foodType_ind %>%
@@ -260,7 +245,7 @@ agg_foodType_ind <- foodType_ind %>%
   summarise(across (cephalopod:SWfish,~ mean(.x, na.rm = TRUE))) %>% 
   gather ("food_type", "proportion")
 
-# save plot
+# save plot -  histogram from Figure 1.
 pdf (here ("output", "agg_foodType_ind.pdf"),width=5,height=6)  
 ggplot (data = agg_foodType_ind,
           aes (fill=food_type, 
@@ -296,7 +281,6 @@ dev.off()
 # VITA_RAE	Quantidade de vitamina A, atividade retinoica, em microgramas (mcg)
 
 
-
 # 2 - daily consumption
 # filter the food
 filter_interesting_food <- CONSUMO_ALIMENTAR_MEAT 
@@ -308,7 +292,7 @@ filter_interesting_food <- filter_interesting_food %>%
           Calcium = Calcium/1000,
           Zinc = Zinc/1000,
           Iron = Iron/1000,
-          Magnesium = Magnesium/1000) # into grams
+          Magnesium = Magnesium/1000) # into grams for different measurement scales
 
 
 # function to transform quantitites into  kg / year
@@ -353,14 +337,26 @@ consumption_all <- filter_interesting_food %>%
           Ninterv = sum (Ninterv,na.rm=T)) 
 
 
-# averages across all interviewees
+# averages across all interviewees, regarding kg of bluefoods and seafood
 sum(consumption_all [which(consumption_all$bluefood ==  "Bluefood"), "QTD_kg"])/length(unique(consumption_all$COD_INFOR))
 sum(consumption_all [which(consumption_all$sea_food ==  "1"), "QTD_kg"])/length(unique(consumption_all$COD_INFOR))
 # nrow(unique(test [which(test$state == "Alagoas"),"COD_INFOR"]))
 
 
-# calculate the averages across states (to map)
+# quantities of seafood in average across all interviewees -- values shown in the RESULTS
+mean(consumption_all$QTD[which(consumption_all$sea_food==1)],na.rm=T)
+sd(consumption_all$QTD[which(consumption_all$sea_food==1)],na.rm=T)
+range(consumption_all$QTD[which(consumption_all$sea_food==1)],na.rm=T)
+length(unique(consumption_all$COD_INFOR[which(consumption_all$sea_food==1)])) # interviewees that ate seafood
 
+# quantities of other items in average across all interviewees -- values shown in the RESULTS
+mean(consumption_all$QTD[which(consumption_all$bluefood !="Bluefood")],na.rm=T)
+sd(consumption_all$QTD[which(consumption_all$bluefood !="Bluefood")],na.rm=T)
+range(consumption_all$QTD[which(consumption_all$bluefood !="Bluefood")],na.rm=T)
+length(unique(consumption_all$COD_INFOR[which(consumption_all$bluefood !="Bluefood")]))
+length(unique(consumption_all$COD_INFOR))
+
+# calculate the averages across states (to map)
 states <- unique(consumption_all$state)
 df_states_kg <- lapply (states, function (i) {
   
@@ -388,8 +384,6 @@ df_states_kg <- df_states_kg %>%
                             "Espírito Santo" ="Espirito Santo",
   ))
   
-
-
 
 # demand only involves seafood
 # extract and transform the data
@@ -429,8 +423,6 @@ consumption_nutrients <- filter_interesting_food %>%
           mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
           Ninterv = sum (Ninterv,na.rm=T)) 
 
-
-
 # summarize the data to calculate total demand
 # calculate the averages across states to have per capita consumption of seafood and nutrients
 states <- unique(consumption_nutrients$state)
@@ -468,22 +460,22 @@ consumption_nutrients_SeaFood <- consumption_nutrients_SeaFood %>%
   mutate_at(vars (sum_seafood_kg:sum_magn_kg), funs(. / nint))   # per capita amounts
 
 
-# averages
-mean(consumption_nutrients_SeaFood$sum_seafood_kg)
-sd(consumption_nutrients_SeaFood$sum_seafood_kg)
+# average values reported in the section of Results!
 
+mean(consumption_nutrients_SeaFood$sum_seafood_kg)# average seafood consumption 
+sd(consumption_nutrients_SeaFood$sum_seafood_kg)# sd
+range(consumption_nutrients_SeaFood$sum_seafood_kg)
+
+# state quantities
 consumption_nutrients_SeaFood %>%
   arrange(sum_seafood_kg)
 
 # save
-save (consumption_nutrients_SeaFood, file = here ("processed_data", "consumption_nutrients_SeaFood.RData"))
+save (consumption_nutrients_SeaFood, 
+      file = here ("processed_data", "consumption_nutrients_SeaFood.RData"))
 
 
-
-
-
-# demand for other sources
-
+# demand for other sources beyond bluefoods
 df_states_kg_nut_Other  <- lapply (states, function (i) { # and income class
   
   # subset the data
@@ -518,10 +510,9 @@ consumption_nutrients_Other <- consumption_nutrients_Other %>%
   mutate_at(vars (sum_other_kg:sum_other_magn_kg), funs(. / nint))   # per capita amounts
 
 
-# averages
+# averages - values reported in the RESULTS
 mean(consumption_nutrients_Other$sum_other_kg)
 sd(consumption_nutrients_Other$sum_other_kg)
-
 consumption_nutrients_Other %>%
   arrange(sum_other_kg)
 
@@ -581,7 +572,7 @@ map_BR_seafood <- ggplot(data = states_consumption) +
   guides(colour=guide_legend(title=("Region")))
   
 
-map_BR_seafood
+map_BR_seafood # component of Fig. 1
 
 # bluefood
 
@@ -614,7 +605,7 @@ map_BR_bluefood <- ggplot(data = states_consumption) +
   guides(colour=guide_legend(title=("Region")))
 
 
-map_BR_bluefood
+map_BR_bluefood # fig 1 and S1.2
 
 # arrange map and circular plot
 
@@ -651,4 +642,127 @@ ggsave(p, file=here ('output',"circular_plot.pdf"),
        width=10, height=10,bg="white")
 
 
+# ------------------------------------
+
+#         Create Figure S2.3.
+
+
+# extract and transform the data
+consumption_all_class <- filter_interesting_food %>%
+  arrange(state)%>% # ordering states
+  select (region,
+          state,
+          income_cat,
+          COD_INFOR,
+          COD_FAMILY,
+          DIA_SEMANA,
+          N_pop_state, 
+          Ndays,
+          bluefood,
+          sea_food,
+          QTD, 
+          ENERGIA_KCAL,
+          PTN,
+          Calcium, 
+          Iron, 
+          Zinc, 
+          `Vitamin-A`, 
+          Omega3,
+          Magnesium) %>% # select  variables (nutrients) to test
+  # mutate (Ndays=n_distinct(DIA_SEMANA)) %>% # find the number of interviewing days
+  group_by(state,income_cat,COD_INFOR,bluefood, sea_food) %>%  # bluefood #  summarize by person
+  summarise(across (QTD:Magnesium, ~sum(.x, na.rm=T)), # sum of personal consumption
+            mean_N_pop = mean(N_pop_state,na.rm=T), # N per pop class
+            Ninterv = n_distinct(COD_INFOR),
+            Ndays = mean(Ndays)) %>% #, # N interview days
+  # Ndays=sum(Ndays,na.rm=T)) %>% # finally group by interviewer
+  # quantity proportional to the number of days
+  mutate_at(vars (QTD:Magnesium), funs(. / Ndays)) %>% 
+ 
+   # transform into kg
+  mutate (across (QTD:Magnesium,list(kg = fun_kg_year)), # yearly consumption of nutrients, in KG/year
+          mean_N_pop = mean(mean_N_pop,na.rm=T), # N per pop class
+          Ninterv = sum (Ninterv,na.rm=T)) 
+
+
+# calculate the averages across states (to map)
+states <- unique(consumption_all_class$state)
+classes <- unique(consumption_all_class$income_cat)
+
+df_states_kg <- lapply (states, function (i) 
+  do.call(rbind,lapply (classes, function (k) {
+  
+    d1 <- consumption_all_class [which(consumption_all_class$state == i & consumption_all_class$income_cat ==  k),] 
+    df_test <- data.frame (nint = length (unique(d1$COD_INFOR)),
+                sum_kg_seafood = sum(d1$QTD_kg[which(d1$sea_food == "1")]),
+                sum_kg_other = sum(d1$QTD_kg[is.na(d1$sea_food)]),
+                sum_kg_bluefood = sum(d1$QTD_kg[which(d1$bluefood == "Bluefood")]),
+                sum_kg_total = sum(d1$QTD_kg))
+    df_res <- data.frame (seaf_cons = df_test$sum_kg_seafood/df_test$nint,
+                          other_cons =   df_test$sum_kg_other/df_test$nint,     
+                          bluef_cons = df_test$sum_kg_bluefood/df_test$nint,
+                          total_cons = df_test$sum_kg_total/df_test$nint,
+                          class=k,
+                          state=i)
+    df_res
+    
+})))
+names(df_states_kg) <- states
+df_states_kg <- do.call(rbind,df_states_kg)
+# adjust names
+df_states_kg <- df_states_kg %>% 
+  mutate(state_adj = recode(state, "Mato Grosso do Sul" = "Mato Grosso Do Sul",
+                            "Rio de Janeiro" = "Rio De Janeiro",
+                            "Rio Grande do Norte" = "Rio Grande Do Norte",
+                            "Espírito Santo" ="Espirito Santo",
+  ))
+  
+
+# join the databases
+states_class_consumption <- dplyr::left_join(BR_states %>% 
+                                         mutate(name_region = recode(name_region, "Norte" = "North",
+                                                                   "Sul" = "South",
+                                                                   "Sudeste" = "Southeast",
+                                                                   "Nordeste" ="Northeast",
+                                                                   "Centro Oeste"="Central")), 
+                                       df_states_kg, 
+                                       by = c("name_state" = "state_adj"))
+# map - Create Fig. S2.3
+map_state_class <- ggplot(data = states_class_consumption %>% 
+                            filter (!is.na(state))
+                            ) +
+  geom_sf(aes(fill=seaf_cons,
+          colour=name_region),
+          size=0.5) + 
+  facet_wrap(~class,ncol=5)+
+  theme_classic() +
+  theme (legend.position = "right",
+         legend.direction = "vertical",
+         legend.key.size = unit(1,"cm"),
+         legend.text = element_text(size=8),
+         legend.title = element_text(size=10),
+         axis.text = element_blank(),
+         axis.line = element_blank(),
+         axis.ticks = element_blank(),
+         panel.background = element_rect(fill = "transparent",
+                                         colour = NA_character_), # necessary to avoid drawing panel outline
+         panel.grid.major = element_blank(), # get rid of major grid
+         panel.grid.minor = element_blank(), # get rid of minor grid
+         plot.background = element_rect(fill = "transparent",
+                                        colour = NA_character_), # necessary to avoid drawing plot outline
+         legend.background = element_blank(),# element_rect(fill = "transparent"),
+         #legend.box.background = element_rect(fill = "transparent"),
+         #legend.key = element_rect(fill = "transparent")
+         )+
+  scale_fill_gradient(low = "#B7DAF9", high = "#032442")+ 
+  scale_colour_brewer(palette = "Spectral",direction=1)+
+  guides(colour=guide_legend(title=("Region")))
+  
+
+map_state_class # component of Fig. S3.2
+ggsave(map_state_class, file=here ('output',"Map_classes.pdf"), 
+       width=10, height=10,bg="white")
+
+
+# end
 rm(list=ls())
