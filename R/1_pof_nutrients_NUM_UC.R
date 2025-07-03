@@ -1,5 +1,15 @@
-# organize data to analyses
 
+# ----------------------------------------------------------
+
+#         Script created to organize input data for further exploration and analyses
+
+# output 1: fishConsumption_Income_all_food.RData - data for all consumed food items 
+# output 2: fishConsumption_Income_meat.RData - data for animal protein (items) 
+
+# -----------------------------------------------------------
+rm(list=ls())
+
+# load packages
 source("R/packages.R")
 
 # load data
@@ -20,7 +30,6 @@ income_MORADOR <- MORADOR %>%
   group_by (UF) %>%
   summarize (mean_income = mean(PC_RENDA_MONET,na.rm=T))
 
-
 # interviewees
 length(unique(MORADOR$COD_INFOR ))
 
@@ -36,7 +45,7 @@ CONSUMO_ALIMENTAR$COD_INFOR  <- paste(CONSUMO_ALIMENTAR$UF,
                                          
                                sep = "_")
 
-# Number of interviewees
+# Number of interviewees (total)
 length(unique(CONSUMO_ALIMENTAR$COD_INFOR  ))
 
 
@@ -49,7 +58,7 @@ CONSUMO_ALIMENTAR$COD_FAMILY  <- paste(CONSUMO_ALIMENTAR$UF,
                                       CONSUMO_ALIMENTAR$NUM_UC,
                                       
                                       sep = "_")
-
+# Number of families (total)
 length(unique(CONSUMO_ALIMENTAR$COD_FAMILY  ))
 
 
@@ -58,25 +67,22 @@ length(unique(CONSUMO_ALIMENTAR$COD_FAMILY  ))
 #      CONSUMO_ALIMENTAR [which(CONSUMO_ALIMENTAR$COD_INFOR  == CONSUMO_ALIMENTAR$COD_INFOR [1]),"QUADRO"])
 
 
-
-# load omega3 data to match
+# load omega3 data to match with food item classification
 omega3 <- read.csv (here ("POF_government", 
                                  "Omega3_QTD.csv"),
                      sep=",")
 
 
-
-
-# Loading documentation -- food codes
+# Loading documentation -- food codes to match with nutrient content
 Documentacao <- read.xlsx (here ("POF_government", 
                                 "Cadastro de Produtos do Consumo Alimentar.xlsx"),sheet=1)
-
 
 # replace empty cells by NA
 Documentacao$protein_type[nchar(Documentacao$protein_type)==0] <- NA 
 
 
-# MATCHING FOOD TYPE WITH THE CODE
+# MATCHING FOOD TYPE WITH THE CODE - have the content per food item
+# number of entries (food items)
 table(unique(CONSUMO_ALIMENTAR$V9001) %in% unique(Documentacao$CÓDIGO.DO.ALIMENTO))
 
 CONSUMO_ALIMENTAR$food_type <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
@@ -91,12 +97,12 @@ CONSUMO_ALIMENTAR$single_PTN <- Documentacao[match (CONSUMO_ALIMENTAR$V9001,
                                                   Documentacao$CÓDIGO.DO.ALIMENTO),"single_PTN"]
 
 
-
 # bind omega 3 in the consumption table
-CONSUMO_ALIMENTAR$Omega3 <- (omega3$O3 [match (CONSUMO_ALIMENTAR$food_type, omega3$DESCRIÇÃO.DO.ALIMENTO)])
+CONSUMO_ALIMENTAR$Omega3 <- (omega3$O3 [match (CONSUMO_ALIMENTAR$food_type, 
+                                               omega3$DESCRIÇÃO.DO.ALIMENTO)])
 
 
-# BIND INCOME
+# BIND INCOME IN THE COMPLETE TABLE - INCOME IS IN THE 'MORADOR' SPREADSHEET
 CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
                            MORADOR[match (CONSUMO_ALIMENTAR$COD_INFOR ,
                                                 MORADOR$COD_INFOR ),
@@ -106,10 +112,6 @@ CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
                                             "RENDA_TOTAL",
                                             "V0404", 
                                             "V0405")])
-
-
-
-
 
 
 # change colnames
@@ -132,50 +134,34 @@ CONSUMO_ALIMENTAR$Race <- recode(CONSUMO_ALIMENTAR$Race,
                         "9" = "nao_declarado")
 
 
-
-
 # COLUMNS WE DON'T NEED
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR [,which (colnames(CONSUMO_ALIMENTAR) %in% 
                                    c(paste ("V90",seq (15,30),sep=""),
                                             "COD_UNIDADE_MEDIDA_FINAL","COD_PREPARACAO_FINAL") == F
 )]
-
-
-
-View (CONSUMO_ALIMENTAR %>%
-        group_by (food_type) %>%
-        summarise (mean(Omega3,na.rm=T)))
-
-
-
+# check data - if omega3 quantities are in the right place
+#View (CONSUMO_ALIMENTAR %>%
+#        group_by (food_type) %>%
+#        summarise (mean(Omega3,na.rm=T)))
+#
 
 # BR states
 states <- read_excel (here ("POF_government", 
                                   "Documentacao_20210423",
                                   "Estratos POF 2017-2018.xls"))
 
-
-
-
 # df with state codes
 df_states <- data.frame (states = states$...1,
                          codes = substr(states$ESTRATOS,1,2)
 )
-
-
 
 # code of states
 CONSUMO_ALIMENTAR$state <- ((df_states [match (CONSUMO_ALIMENTAR$UF, 
                                                              df_states$codes),
                                                       "states"]))
 
-
-
-
-
 # load PIB data to match PIB, region and position
-
-PIB <- read.csv(here ("POF_state", 
+PIB <- read.csv(here ("POF_government", 
                       'Pib_BR.csv'),
                 sep=";")
 
@@ -184,10 +170,6 @@ PIB <- read.csv(here ("POF_state",
 CONSUMO_ALIMENTAR <- cbind(CONSUMO_ALIMENTAR,
                           PIB[match (CONSUMO_ALIMENTAR$UF, PIB$cod_uf),
                                                       c("position", "region")])
-
-
-
-
 
 # discretisize income
 CONSUMO_ALIMENTAR <- CONSUMO_ALIMENTAR %>% 
@@ -313,7 +295,7 @@ dimnames(Ndays)[2] <- "Ndays"
 # match
 CONSUMO_ALIMENTAR$Ndays <- Ndays[match (CONSUMO_ALIMENTAR$COD_INFOR,
                          rownames(Ndays)), "Ndays"]
-
+# check
 unique(CONSUMO_ALIMENTAR [which (CONSUMO_ALIMENTAR$COD_INFOR == "21_2121_2_210079610_11_1_1"),"DIA_SEMANA"])
 (CONSUMO_ALIMENTAR [which (CONSUMO_ALIMENTAR$COD_INFOR == "21_2121_2_210079610_11_1_1"),"Ndays"])
 
@@ -344,18 +326,28 @@ write.xlsx(dat_state,file = here ("processed_data", "state_interviewees.xlsx"), 
 length(unique(CONSUMO_ALIMENTAR$COD_INFOR))
 length(unique(CONSUMO_ALIMENTAR$COD_FAMILY))
 
+
+# values reported in the paper  --------
+
 # number of food items
 length(unique(CONSUMO_ALIMENTAR$food_type))
 length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$bluefood == "RedMeat/Other")]))
-length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$bluefood == "Bluefood")]))
-length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$single_PTN == 1)]))
+length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$bluefood == "Bluefood")])) # fish and shellfish species
+length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$single_PTN == 1)])) # blue food items 
 length(unique(CONSUMO_ALIMENTAR$food_type [which(CONSUMO_ALIMENTAR$single_PTN == 1 & 
-                                                   CONSUMO_ALIMENTAR$sea_food == 1)]))
+                                                   CONSUMO_ALIMENTAR$sea_food == 1)])) # seafood
 
-# save  
+
+# -------------------
+#   output 1: consumption of all food items
+
+# save
 save (CONSUMO_ALIMENTAR, file = here ("processed_data",
                                       "fishConsumption_Income_all_food.RData"))
 
+
+#  -------------------
+#   produce output 2: consumption of animal protein
 
 
 # onlymeat data 
@@ -373,7 +365,9 @@ View (CONSUMO_ALIMENTAR_MEAT %>%
         summarise (mean(Omega3,na.rm=T)))
 
 
-# food consumption - meat
+#  -------------------
+#   output 2: food consumption - meat
+# save
 save (CONSUMO_ALIMENTAR_MEAT, file = here ("processed_data",
                                       "fishConsumption_Income_meat.RData"))
 
