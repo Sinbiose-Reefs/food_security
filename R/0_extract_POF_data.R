@@ -1,4 +1,14 @@
+
+# ------------------------------------------------------
+
+#         Script used to process raw POF (RDB) data
+#             Large data set (+600MB)
+
+# ------------------------------------------------------
+
+
 # POF data ( too heavy; load --> process --> save)
+rm(list=ls())
 
 source("R/packages.R")
 
