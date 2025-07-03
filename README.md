@@ -1,64 +1,114 @@
 Food beyond land: seafood contribution to human nutrition in Brazil
 ================
 Maria Luiza Gallina et al., ReefSynthesis Working Group
-2024-06-04
+2025-07-03
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 <!-- badges: start -->
 <!-- badges: end -->
 
 Repository containing the data and scripts used in the article “Food
-beyond land: seafood contribution to human nutrition in Brazil”, to be
-submitted to Current Biology.
+beyond land: seafood contribution to human nutrition in Brazil”, being
+reviewed in Nature Food.
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-# The project is organized as follows:
+## The project is organized as follows:
 
-Root
+## **Root**
 
-\|— data_fisheries_nutrients  
+\|— **data_fisheries_nutrients**: Raw nutritional and trait data.  
 \|———–
 “Atributos_especies_Atlantico\_&\_Pacifico_Oriental_2020_04_28.csv”:
-Reef fish traits (Quimbayo et al. 2021)  
+Reef fish traits (Quimbayo et al. 2021, DOI: doi/10.1002/ecy.3298).  
 \|———–
 “FINAL_RECONSTRUCTED_Brazil_1950_2015_CommercialEtapaII_04072021_IP_Freire.xlsx”:
-Landings time series (Freire et al. 2021)  
+Time series of fisheries catches (reconstructions) (Freire et al. 2021,
+from <http://www.propesq.pesca.sp.gov.br/37/conteudo>).  
 \|———– “Nutrients_TBCA.xlsx”: Table of nutritional content (Brazilian
-Table), from <a href="http://www.tbca.net.br/\"
-class="uri">http://www.tbca.net.br/\</a> \|———–
-“Species_Nutrient_Predictions.csv”: data from Hicks et al. (2019),
-available at <https://github.com/mamacneil/NutrientFishbase> and <a
-href="https://fishbase.mnhn.fr/Nutrients/manual/FishBaseNutrients_2021_06.pdf\"
-class="uri">https://fishbase.mnhn.fr/Nutrients/manual/FishBaseNutrients_2021_06.pdf\</a>
+Table), from <http://www.tbca.net.br/>.  
+\|———– “Species_Nutrient_Predictions.csv”: data from Hicks et
+al. (2019), available at <https://github.com/mamacneil/NutrientFishbase>
+and
+<https://fishbase.mnhn.fr/Nutrients/manual/FishBaseNutrients_2021_06.pdf>
+.  
+\|———– Nutrients_imputation.xlsx: List of taxa with nutritional data in
+some data base that were used to calculate the nutritional content of
+food items with missing data in RFB. For example, average nutrient
+values for *Penaeus*, *Penaeus esculentus*, *Penaeus latisulcatus*,
+*Penaeus merguiensis*, *Penaeus monodon*, *Penaeus semisulcatus* were
+used to input nutritional data for *Penaeus brasiliensis*.  
+\|———– uFiSh1.0.xlsx: uFish nutritional data. Obtained from
+<https://www.fao.org/infoods/infoods/tables-and-databases/faoinfoods-databases/en/>.  
 \|———– “Threshold_FAO.xlsx”: FAO’s thresholds of nutrient consumption  
   
-\|— processed_data  
-\|———– “POF_processed_data.RData”: processed data using POF dataset
-hosted in the folder “POF_government”. This resulted from running the R
-script “0_extract_POF_data.R”  
-  
-  
-\|— output  
-\|———– figures (pdf) and RData  
-  
-\|— POF_government  
+\|— **POF_government**: Raw data (POF, or RFB in the article) from
+Brazilian government. The data we used is in the folder “Dados_20210304”
+(not visible on GitHub as it has 1.14GB size). The folder was created
+from data found at <a
+href="https://www.ibge.gov.br/estatisticas/sociais/saude/24786-pesquisa-de-orcamentos-familiares-2.html?=&amp;t=microdados.\"
+class="uri">https://www.ibge.gov.br/estatisticas/sociais/saude/24786-pesquisa-de-orcamentos-familiares-2.html?=&amp;t=microdados.\</a>
 \|———– “Omega3_QTD.csv”: Content of Omega-3 in food. Values were
 gathered from FAO and FishBase. Note that values were only recorded for
 fish (red meat sources have Omega-3 equal to 0).  
+\|———– “POP2017_20220905.xls”: Brazilian population in 2017, per
+municipality. Data from IBGE.  
+\|———– “POP2018_20220905.xls”: Brazilian population in 2017, per
+municipality. Data from IBGE.  
+\|———– “Cadastro de Produtos do Consumo Alimentar.xlsx”: List of food
+items in POF/RFB data. Definition of animal protein items and seafood
+items was done based on this table. Data from POF database.  
+\|———– “Pib_BR.xlsx”: Gross domestic product of Brazilian states. Data
+from IBGE.  
   
-\|— POF_state  
-\|———– Brazilian government data  
+\|— **processed_data**: Data sets obtained after processing the raw data
+sets.  
+\|———– “POF_processed_data.RData”: processed data using POF dataset
+hosted in the folder “POF_government”. This resulted from running the R
+script “0_extract_POF_data.R”  
+\|———– “consumption_nutrients.RData”: processed data concerning the
+consumption of nutrients from seafood”. This resulted from running the R
+script “2_nutrient_demand.R”. This data set is used to define seafood
+demand.  
+\|———– “consumption_nutrients_Other.RData”: processed data concerning
+the consumption of nutrients from other sources than seafood”. This
+resulted from running the R script “2_nutrient_demand.R”  
+\|———– “fishConsumption_Income_all_food.RData”: processed data
+concerning the consumption of nutrients from all food sources, to
+explore overall consumption”. This resulted from running the R script
+“1_pof_nutrients_NUM_UC.R”  
+\|———– “fishConsumption_Income_meat.RData”: processed data concerning
+the consumption of nutrients from animal protein items, to explore
+overall consumption of animal protein”. This resulted from running the R
+script “1_pof_nutrients_NUM_UC.R”  
+\|———– “table_supply_state.RData”: processed data concerning the catch
+amount per state, after matching fisheries and nutritional data. This
+resulted from running the R script “5_generate_nutrient_supply.R”  
+\|———– “fisheries_wtrait.xlsx”: Nutritional data per taxon. Obtained
+after matching fisheries, trait and nutritional data at the different
+taxonomic levels of fisheries data. This resulted from running the R
+script “5_generate_nutrient_supply.R”  
+\|———– “state_interviewees.xlsx”: Number of interviewees per state. This
+resulted from running the R script “1_pof_nutrients_NUM_UC.R”  
+\|———– “worms_fish.RData”: Taxonomic classification of fisheries and
+nutritional data (validation using WORMS data - worrms R package). This
+resulted from running the R script “5_generate_nutrient_supply.R”  
   
-\|— R  
-\|———– several R scripts (numbered according to the processing order)  
+  
+\|— **output**  
+\|———– figures (pdf) and RData  
+  
+\|— **R**  
+\|———– several R scripts (numbered according to the processing order -
+to reproduce results run in that order, from “0_extract_POF_data.R” to
+“8_supp_map_consumption_allstates.R”.)  
 
 #### This paper was produced using the following software and associated packages:
 
     ## R version 4.4.1 (2024-06-14 ucrt)
     ## Platform: x86_64-w64-mingw32/x64
-    ## Running under: Windows 10 x64 (build 19045)
+    ## Running under: Windows 11 x64 (build 26100)
     ## 
     ## Matrix products: default
     ## 
@@ -99,4 +149,4 @@ fish (red meat sources have Omega-3 equal to 0).
     ## [49] munsell_0.5.1      pillar_1.9.0       htmltools_0.5.8.1  R6_2.5.1          
     ## [53] rprojroot_2.0.4    evaluate_1.0.1     ggfun_0.1.6        class_7.3-22      
     ## [57] Rcpp_1.0.13        zip_2.3.1          nlme_3.1-164       mgcv_1.9-1        
-    ## [61] xfun_0.44          fs_1.6.4           pkgconfig_2.0.3
+    ## [61] xfun_0.51          fs_1.6.4           pkgconfig_2.0.3
