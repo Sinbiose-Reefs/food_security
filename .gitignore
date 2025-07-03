@@ -20,4 +20,5 @@ MS
 *.jpeg
 R/2_nutrient_demand_kg_alternative(notused).R
 R/6_explore_nutrient_content_time.R
+R/consumption_income.R
 
